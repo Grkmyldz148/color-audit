@@ -1,6 +1,6 @@
 {
   "name": "color-audit",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "The Open-Source Color Audit — measuring the color scales everyone copies, as visual proof a designer can feel.",
   "type": "module",

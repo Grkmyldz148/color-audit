@@ -1,6 +1,6 @@
 # The Open-Source Color Audit
 
-**You call it blue-500. Is it?** We measured the color systems everyone copies — Tailwind CSS v4, GitHub Primer, Material Design, Bootstrap 5, Radix Colors, Chakra UI (24 scales, 252 tokens) — and turned the findings into visual proof a designer can feel, organized as **four chapters**, each a different question a designer actually asks.
+**You call it blue-500. Is it?** We measured the color systems everyone copies — Tailwind CSS v4, GitHub Primer, Material Design, Bootstrap 5, Radix Colors, Chakra UI (24 scales, 252 tokens) — and turned the findings into visual proof a designer can feel, organized as **five chapters**, each a different question a designer actually asks.
 
 **Live site: https://grkmyldz148.github.io/color-audit/**
 
@@ -36,6 +36,35 @@ Every swatch on the site is the real, untouched color from each system's publish
 
 Each card also carries an honest "what not to copy along with it" note. The chapter closes on the floor everyone clears: **nobody shipped a dead zone** — every mid shade holds ≥ 4.5:1 against white or black, and all 24 scales are strictly monotone in lightness (zero reversals across 228 steps).
 
+## Chapter 5 — If we built one: the blueprint (NEW)
+
+**"The math is not a secret."** Everything the audit measures is buildable, so the build now generates a reference palette at build time — `hl.semanticScale()` on three familiar seeds (`#3b82f6`, `#ef4444`, `#22c55e`, each preserved untouched at step 500) plus a true gray built from the blue ramp's own lightness ladder at C = 0 — and runs it through the **exact same audit pipeline** as the six systems (a 1:1 replica, parity-checked against all 24 scorecard scales; the build fails on any disagreement). The results, ranked by the leaderboard's own metric:
+
+| # | Palette | Mean step CV % | Mean L-CV % | Worst hue drift | Worst gray tint (C) | Monotonicity violations |
+|---|---------|---------------:|------------:|----------------:|--------------------:|------------------------:|
+| 1 | Chakra UI | 41.6 | 28.2 | 20.5° | 0.063 | 0 |
+| 2 | GitHub Primer | 44.2 | 41.4 | 27.6° | 0.038 | 0 |
+| 3 | Bootstrap 5 | 44.6 | 24.1 | 11.9° | 0.027 | 0 |
+| 4 | **Generated (helmlab)** | 45.5 | 30.7 | **2.7°** | **0.0000** | 0 |
+| 5 | Tailwind CSS v4 | 45.6 | 43.1 | 13.2° | 0.063 | 0 |
+| 6 | Material Design (2014) | 56.6 | 42.9 | 20.8° | 0.0000 | 0 |
+| 7 | Radix Colors | 101.6 | 95.9 | 17.2° | 0.0000 | 0 |
+
+Published honestly, wins and losses alike — **all of it asserted at build time, including the losses**, so the disclosure can't silently go stale in either direction:
+
+- **Wins:** worst hue drift 2.7° across three chromatic ramps (the best audited system allows 11.9° — 4×+ more, asserted); ink-true gray (C 0.0000, tying Material and Radix); zero lightness reversals; every adjacent step clears the page's 0.025 near-duplicate JND gate (closest pair 0.046).
+- **Losses, stated plainly:** on **mean step CV — the audit's own headline ranking — the generated palette lands 4th of 7**, behind Chakra, Primer and Bootstrap (and essentially tied with Tailwind); on mean L-CV it's 3rd, behind Bootstrap and Chakra; its blue ships an **8.0× max/min step spread — the same size as the Bootstrap cliff the audit opens with**; and its green-500 fails white text at 2.28:1, just like the Tailwind green it resembles (2.22:1) — generation anchors your seed, it doesn't fix it.
+
+The chapter then presents the five principles the palette obeys, each with a one-line formula and a measured receipt:
+
+1. **The lightness ladder** — `L_i = ladder(i)` in perceptual L, never a % of white/black paint (receipt: the gray strip *is* the blue ramp's ladder; honesty note: mean L-CV only ranks 3rd).
+2. **The hue lock** — `h_i = h_seed`; only L and C move down the ramp (receipt: first-hue vs worst-drift-hue at equal L/C measures 0.012 — passes the page's own near-duplicate gate; the worst ramp, red at 2.7°, measures 0.030 and is *denied* the seamless strip).
+3. **Chroma respects the gamut** — `C_i = min(C_seed, maxC(L_i, h))`: clip chroma, never rotate hue (receipt: measured C tracks the formula within 0.006 at all 11 blue steps; asserted < 0.025 on all three ramps). Hue drift in other systems is often exactly this clipping done wrong.
+4. **Gray means gray** — `gray_i = [L_i, 0, 0]`: C = 0 by construction (receipt: shipped chip and neutral twin identical).
+5. **Steps clear the JND** — every adjacent pair ≥ 0.025 on the trained-difference metric (min: gray 50→100 at 0.046, 1.8× the gate).
+
+Closing trade-off: a generator gives you **geometry, not judgment** — no hand-tuned optical corrections, no brand voice, no Radix-style role semantics; and OKLab-family spaces score slightly better on near-achromatic steps per helmlab's own [benchmark honesty tables](https://helmlab.space/benchmark). The principles are space-portable: **steal the principles, not necessarily the library.**
+
 ## The numbers, if you want them
 
 Ranked by mean step-distance CV (lower = more even steps):
@@ -63,6 +92,7 @@ Every hex token → helmlab GenSpace (`hl.genFromHex` → `[L, a, b]`, `hl.genTo
 - **Weight + contrast (Ch. 3, new):** mid-row weight spread = max − min L across blue/red/green/gray at the mid step; white-text contrast via `contrastRatio('#ffffff', hex)`, PASS ⇔ ≥ 4.5 (WCAG AA). Every badge asserted at build time.
 - **Lightness skeleton:** each token re-rendered as neutral gray at its measured L via `genFromLch([L, 0, 0])`.
 - **Near-duplicate honesty gate:** any "spot the boundary" / seamless side-by-side visual requires `hl.difference(pair) < 0.025` or the build **fails**; the build also asserts the gate is real (Primer gray 4→5 at 0.019 passes; Material blue 400→500 at 0.044 is rejected).
+- **Generated palette (Ch. 5, new):** `hl.semanticScale(seed)` per ramp (seed asserted untouched at 500); gray = `genFromLch([L_i, 0, 0])` over the blue ramp's L ladder; audited by a 1:1 pipeline replica parity-checked against all 24 scorecard scales; `maxC(L, h)` = the chroma that survives a round-trip through helmlab's hue-preserving gamut mapping. Wins *and* disclosed losses are both asserted at build time.
 
 The page also checks itself: at build time every text/background pair in the design is verified against WCAG (body AAA 7:1, secondary AA 4.5:1), every near-duplicate visual is verified against the honesty gate, and every headline claim (largest/smallest step, gray tints, blue-500 spreads, contrast verdicts, "what to steal" superlatives) is asserted against the data — the build fails otherwise.
 
@@ -77,7 +107,7 @@ node build.mjs     # regenerates index.html from data/
 
 - `data/tokens/*.json` — the raw hex tokens with npm package + version provenance
 - `data/scorecard.json` — every measurement on the site
-- `build.mjs` — the single source: derives all page numbers from the data, computes the Chapter 2–3 facts live via helmlab, and enforces the contrast self-check, the near-duplicate honesty gate, and the headline-claim assertions at build time; the emitted page is static HTML + inline SVG, no JavaScript
+- `build.mjs` — the single source: derives all page numbers from the data, computes the Chapter 2–3 facts live via helmlab, generates and audits the Chapter 5 reference palette, and enforces the contrast self-check, the near-duplicate honesty gate, the pipeline parity check, and the headline-claim assertions (wins and disclosed losses alike) at build time; the emitted page is static HTML + inline SVG, no JavaScript
 
 **Limitations:** this audit measures *scale quality only* — how evenly and predictably a ramp is spaced in a perceptual space. It says nothing about aesthetics, component design, or fitness for each system's intended workflow. Exact numbers are GenSpace-specific (orderings should be broadly stable across OKLab-class spaces).
 

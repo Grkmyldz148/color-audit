@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// The Open-Source Color Audit — static site generator (v3, four-chapter edition).
+// The Open-Source Color Audit — static site generator (v4, five-chapter edition).
 // Reads data/scorecard.json + data/tokens/*.json and emits index.html.
 // Single dependency: helmlab (used at BUILD TIME only, to precompute the
-// hue-proof, gray-tint, blue-500-lineup, weight and contrast facts — the
-// emitted page is pure static HTML + inline SVG, no JS). Run: npm install && node build.mjs
+// hue-proof, gray-tint, blue-500-lineup, weight and contrast facts, and to
+// generate + audit Chapter 5's reference palette — the emitted page is pure
+// static HTML + inline SVG, no JS). Run: npm install && node build.mjs
 //
 // Numbers policy: every figure on the page is derived from data/scorecard.json,
 // data/tokens/*.json, or computed here via helmlab. Nothing is invented, and
@@ -816,7 +817,7 @@ const CH4 = [
   chapterIntro({
     id: "ch4", num: 4, title: "What to steal",
     headline: "Every system does one thing better than everyone else.",
-    intro: `The first three chapters read like a list of charges. This one is the constructive close: for each system, the single measured trait worth copying into your own palette — with the number that proves it, and an honest note on what not to copy along with it.`,
+    intro: `The first three chapters read like a list of charges. This one turns constructive: for each system, the single measured trait worth copying into your own palette — with the number that proves it, and an honest note on what not to copy along with it. Chapter 5 then asks the obvious next question: what does a palette look like when it's built on the math from the start?`,
   }),
   CH4_CARDS.join("\n"),
   proofBlock({
@@ -831,11 +832,308 @@ const CH4 = [
   }),
 ];
 
+// ------------------------------ CHAPTER 5 ---------------------------------
+// "If we built one": generate a reference palette from three seeds with
+// helmlab's semanticScale at build time (no hex in this chapter is
+// hand-picked), run it through the EXACT audit pipeline that produced the
+// scorecard, and publish the results — wins AND losses — side by side with
+// the six audited systems.
+// ---------------------------------------------------------------------------
+
+const ranking = scorecard.ranking_by_mean_step_cv;
+
+// (5a) The audit pipeline, replicated 1:1 and PARITY-CHECKED below against
+// all 24 scales in data/scorecard.json. If this function and the scorecard
+// ever disagree, the build FAILS: chapter 5's column is only comparable if
+// it comes from the same math as the other six.
+const meanOf = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+const cvOf = (a) => (Math.sqrt(meanOf(a.map((x) => (x - meanOf(a)) ** 2))) / Math.abs(meanOf(a))) * 100;
+function auditScale(hexMap) {
+  const steps = Object.keys(hexMap), hx = Object.values(hexMap);
+  const L = hx.map((h) => hl.genFromHex(h)[0]);
+  const d = hx.slice(0, -1).map((h, i) => hl.deltaE(h, hx[i + 1]));
+  const dL = L.slice(0, -1).map((l, i) => L[i + 1] - l);
+  const lch = hx.map((h) => hl.genToLch(hl.genFromHex(h)));
+  const chrom = lch.map((v, i) => ({ step: steps[i], C: v[1], h: v[2] })).filter((r) => r.C >= ACHROMATIC_C);
+  let drift = 0, driftAt = chrom.length ? chrom[0].step : null;
+  let firstHue = chrom.length ? chrom[0].h : null, driftHue = firstHue;
+  for (const r of chrom) {
+    let dd = Math.abs(r.h - firstHue); if (dd > 180) dd = 360 - dd;
+    if (dd > drift) { drift = dd; driftAt = r.step; driftHue = r.h; }
+  }
+  return {
+    steps, hexes: hx, L, lch, step_distances: d,
+    step_cv_pct: cvOf(d), L_cv_pct: cvOf(dL),
+    step_max_min_ratio: Math.max(...d) / Math.min(...d),
+    monotonicity_violation_count: dL.filter((x) => x >= 0).length,
+    hue_drift_deg: drift, hue_drift_at_step: driftAt,
+    first_chromatic_hue: firstHue, drift_hue: driftHue,
+    max_C: Math.max(...lch.map((v) => v[1])),
+    min_adjacent_diff: Math.min(...hx.slice(0, -1).map((h, i) => hl.difference(h, hx[i + 1]))),
+  };
+}
+{
+  const near = (x, y, tol) => Math.abs(x - y) <= tol;
+  let checked = 0;
+  for (const k of KEYS) for (const s of SCALES4) {
+    const a = auditScale(tokens[k].scales[s]);
+    const ref = scorecard.systems[k].scales[s];
+    const ok = near(a.step_cv_pct, ref.step_cv_pct, 0.02) && near(a.L_cv_pct, ref.L_cv_pct, 0.02) &&
+      near(a.hue_drift_deg, ref.hue_drift_deg, 0.02) && a.hue_drift_at_step === ref.hue_drift_at_step &&
+      a.monotonicity_violation_count === ref.monotonicity_violations.length &&
+      a.step_distances.every((di, i) => near(di, ref.step_distances[i], 1e-4));
+    if (!ok) throw new Error(
+      `Chapter-5 pipeline parity FAILED on ${k}/${s}: the replica audit no longer reproduces data/scorecard.json, so the generated palette's numbers would not be comparable.`);
+    checked++;
+  }
+  console.log(`Chapter-5 pipeline parity check passed (replica reproduces all ${checked} scorecard scales).`);
+}
+
+// (5b) Generate the reference palette. Chromatic ramps: semanticScale(seed),
+// seed anchored untouched at step 500 (asserted). Gray: the blue ramp's own
+// measured lightness ladder at exactly zero chroma — genFromLch([L_i, 0, 0]) —
+// so the gray and blue ladders match by construction.
+const OUR_SEEDS = { blue: "#3b82f6", red: "#ef4444", green: "#22c55e" };
+const OURS = { scales: {}, audit: {}, mid: {} };
+for (const [s, seed] of Object.entries(OUR_SEEDS)) OURS.scales[s] = hl.semanticScale(seed);
+OURS.scales.gray = Object.fromEntries(Object.entries(OURS.scales.blue).map(
+  ([step, hex]) => [step, hl.genToHex(hl.genFromLch([hl.genFromHex(hex)[0], 0, 0]))]));
+for (const [s, seed] of Object.entries(OUR_SEEDS)) {
+  if (OURS.scales[s]["500"].toLowerCase() !== seed) throw new Error(
+    `Chapter-5 assert FAILED: semanticScale(${seed}) no longer returns the seed untouched at step 500 (got ${OURS.scales[s]["500"]}).`);
+}
+for (const s of SCALES4) OURS.audit[s] = auditScale(OURS.scales[s]);
+for (const s of SCALES4) {
+  const hex = OURS.scales[s]["500"];
+  OURS.mid[s] = { hex, crWhite: hl.contrastRatio("#ffffff", hex), crBlack: hl.contrastRatio("#000000", hex) };
+}
+OURS.agg = {
+  mean_step_cv_pct: meanOf(SCALES4.map((s) => OURS.audit[s].step_cv_pct)),
+  mean_L_cv_pct: meanOf(SCALES4.map((s) => OURS.audit[s].L_cv_pct)),
+  worst_hue_drift_deg: Math.max(...SCALES4.map((s) => OURS.audit[s].hue_drift_deg)),
+  worst_drift_scale: SCALES4.reduce((a, s) => (OURS.audit[s].hue_drift_deg > OURS.audit[a].hue_drift_deg ? s : a), "blue"),
+  monotonicity_violation_count: SCALES4.reduce((a, s) => a + OURS.audit[s].monotonicity_violation_count, 0),
+  gray_max_C: OURS.audit.gray.max_C,
+  min_adjacent_diff: Math.min(...SCALES4.map((s) => OURS.audit[s].min_adjacent_diff)),
+};
+
+// (5c) The chroma law: C_i = min(C_seed, maxC(L_i, h)). helmlab's gamut
+// mapping clips chroma while holding L and h, so the chroma that survives a
+// round-trip from a deliberately out-of-gamut request IS the sRGB ceiling.
+const gamutCeilC = (L, h) => hl.genToLch(hl.genFromHex(hl.genToHex(hl.genFromLch([L, 0.6, h]))))[1];
+OURS.chromaLaw = {};
+for (const s of ["blue", "red", "green"]) {
+  const seedC = hl.genToLch(hl.genFromHex(OUR_SEEDS[s]))[1];
+  const rows = OURS.audit[s].lch.map(([L, C, h], i) => {
+    const ceil = gamutCeilC(L, h);
+    return { step: OURS.audit[s].steps[i], L, C, h, ceil, predicted: Math.min(seedC, ceil) };
+  });
+  const worstDev = Math.max(...rows.map((r) => Math.abs(r.C - r.predicted)));
+  if (worstDev >= 0.025) throw new Error(
+    `Chapter-5 chroma-law assert FAILED on ${s}: measured C deviates from min(C_seed, maxC(L,h)) by ${worstDev.toFixed(4)} ≥ 0.025.`);
+  OURS.chromaLaw[s] = { seedC, rows, worstDev };
+}
+
+// (5d) Equal-L/C hue pairs (the Chapter-2.1 test, run on ourselves).
+function ourHuePair(s) {
+  const a = OURS.audit[s];
+  const h1 = a.first_chromatic_hue, h2 = a.drift_hue;
+  const L = 0.6; let C = 0.2;
+  const inGamut = (h, c) => hl.genToSrgb(hl.genFromLch([L, c, h])).every((v) => v >= -1e-4 && v <= 1 + 1e-4);
+  while (C > 0.02 && !(inGamut(h1, C) && inGamut(h2, C))) C -= 0.005;
+  const hexA = hl.genToHex(hl.genFromLch([L, C, h1])), hexB = hl.genToHex(hl.genFromLch([L, C, h2]));
+  return { h1, h2, L, C, hexA, hexB, drift: a.hue_drift_deg, diff: hl.difference(hexA, hexB) };
+}
+const OUR_BLUE_PAIR = ourHuePair("blue");
+const OUR_RED_PAIR = ourHuePair("red"); // the worst ramp — measures just ABOVE the gate; disclosed in the copy.
+
+// (5e) ASSERTIONS — the wins claimed in the chapter:
+if (OURS.agg.gray_max_C > 1e-6) throw new Error(
+  `Chapter-5 assert FAILED: generated gray claimed ink-true but max C = ${OURS.agg.gray_max_C}.`);
+if (OURS.agg.worst_hue_drift_deg >= 3) throw new Error(
+  `Chapter-5 assert FAILED: hue lock claimed < 3° but worst drift = ${OURS.agg.worst_hue_drift_deg.toFixed(2)}°.`);
+{
+  const bestSystemDrift = Math.min(...ranking.map((r) => r.worst_hue_drift_deg));
+  if (OURS.agg.worst_hue_drift_deg * 4 > bestSystemDrift) throw new Error(
+    `Chapter-5 assert FAILED: "at least 4× tighter hue than the best audited system" — ours ${OURS.agg.worst_hue_drift_deg.toFixed(2)}° vs best system ${bestSystemDrift.toFixed(2)}°.`);
+}
+if (OURS.agg.monotonicity_violation_count !== 0) throw new Error(
+  "Chapter-5 assert FAILED: generated palette has lightness reversals.");
+if (OURS.agg.min_adjacent_diff < JND_GATE) throw new Error(
+  `Chapter-5 assert FAILED: an adjacent generated pair falls under the ${JND_GATE} JND gate (min = ${OURS.agg.min_adjacent_diff.toFixed(4)}).`);
+
+// (5f) ASSERTIONS — the LOSSES disclosed in the chapter. These are asserted
+// too, so the honest caption can't silently go stale: if a future helmlab
+// stops losing a metric, the build fails until the text is rewritten.
+{
+  const beatStepCv = ranking.filter((r) => r.mean_step_cv_pct < OURS.agg.mean_step_cv_pct).map((r) => r.key).sort().join(",");
+  if (beatStepCv !== "bootstrap,chakra,primer") throw new Error(
+    `Chapter-5 honesty assert FAILED: copy says Chakra, Primer and Bootstrap beat the generated palette on mean step CV, but the beaters are now [${beatStepCv}]. Update the disclosure.`);
+  const beatLcv = ranking.filter((r) => r.mean_L_cv_pct < OURS.agg.mean_L_cv_pct).map((r) => r.key).sort().join(",");
+  if (beatLcv !== "bootstrap,chakra") throw new Error(
+    `Chapter-5 honesty assert FAILED: copy says Bootstrap and Chakra beat the generated palette on mean L-CV, but the beaters are now [${beatLcv}]. Update the disclosure.`);
+  if (OURS.mid.green.crWhite >= AA) throw new Error(
+    "Chapter-5 honesty assert FAILED: copy discloses green-500 fails white text (AA), but it now passes. Update the disclosure.");
+  if (OURS.mid.green.crBlack < AA) throw new Error(
+    "Chapter-5 assert FAILED: green-500 claimed to hold black text but fails AA.");
+  if (OURS.audit.blue.step_max_min_ratio < 6) throw new Error(
+    "Chapter-5 honesty assert FAILED: copy discloses a Bootstrap-sized max/min cliff inside the generated blue, but the ratio is now < 6×. Update the disclosure.");
+}
+console.log(`Chapter-5 asserts passed (wins: drift ${OURS.agg.worst_hue_drift_deg.toFixed(2)}°, gray C ${OURS.agg.gray_max_C.toExponential(1)}, min step ${OURS.agg.min_adjacent_diff.toFixed(4)}; ` +
+  `disclosed losses: step-CV rank, L-CV rank, green-500 white text, blue ${OURS.audit.blue.step_max_min_ratio.toFixed(1)}× cliff).`);
+
+// (5g) The comparison table: six systems + the generated palette, ranked by
+// the leaderboard's own metric (mean step CV). Our rank is asserted so the
+// "4th of 7" admission in the copy stays true.
+const CMP = [
+  ...ranking.map((r) => ({
+    key: r.key, name: shortName(r.key), ours: false,
+    stepCv: r.mean_step_cv_pct, lCv: r.mean_L_cv_pct, drift: r.worst_hue_drift_deg,
+    grayC: GRAY[r.key].maxC, mono: r.monotonicity_violation_count,
+  })),
+  {
+    key: "ours", name: "Generated (this chapter)", ours: true,
+    stepCv: OURS.agg.mean_step_cv_pct, lCv: OURS.agg.mean_L_cv_pct, drift: OURS.agg.worst_hue_drift_deg,
+    grayC: OURS.agg.gray_max_C, mono: OURS.agg.monotonicity_violation_count,
+  },
+].sort((a, b) => a.stepCv - b.stepCv);
+const OUR_RANK = CMP.findIndex((r) => r.ours) + 1;
+if (OUR_RANK !== 4) throw new Error(
+  `Chapter-5 honesty assert FAILED: copy says the generated palette ranks 4th of 7 by mean step CV, but it ranks ${OUR_RANK}. Update the disclosure.`);
+
+function cmpTableHTML() {
+  const best = {
+    stepCv: Math.min(...CMP.map((r) => r.stepCv)),
+    lCv: Math.min(...CMP.map((r) => r.lCv)),
+    drift: Math.min(...CMP.map((r) => r.drift)),
+  };
+  const rows = CMP.map((r, i) => `<tr${r.ours ? ' class="ours-row"' : ""}>
+    <td class="rank-cell">${i + 1}</td>
+    <td class="sys-cell">${esc(r.name)}${r.ours ? ' <span class="ours-tag">generated</span>' : ""}</td>
+    <td class="num${r.stepCv === best.stepCv ? " best" : ""}">${r.stepCv.toFixed(1)}%</td>
+    <td class="num${r.lCv === best.lCv ? " best" : ""}">${r.lCv.toFixed(1)}%</td>
+    <td class="num${r.drift === best.drift ? " best" : ""}">${r.drift.toFixed(1)}°</td>
+    <td class="num${r.grayC < 1e-6 ? " best" : ""}">${r.grayC < 1e-6 ? "0.0000" : r.grayC.toFixed(4)}</td>
+    <td class="num">${r.mono}</td>
+  </tr>`).join("\n");
+  return `<div class="cmp-wrap"><table>
+    <thead><tr><th>#</th><th>Palette</th>
+      <th class="num">Mean step CV</th><th class="num">Mean L-CV</th>
+      <th class="num">Worst hue drift</th><th class="num">Worst gray tint C</th>
+      <th class="num">L-reversals</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+// (5h) Chroma-envelope receipt: measured C per blue step (filled bars) vs the
+// sRGB ceiling at that lightness (dashed outlines) vs the seed chroma (gold
+// dashed line). The filled bar always hugs whichever bound is lower.
+function chromaEnvelopeSVG() {
+  const { rows, seedC } = OURS.chromaLaw.blue;
+  const W = 1000, plotH = 190, H = plotH + 26;
+  const n = rows.length, slot = W / n, barW = Math.min(56, slot - 22);
+  const cMax = Math.max(...rows.map((r) => r.ceil), seedC) * 1.12;
+  const y = (c) => plotH - (c / cMax) * plotH;
+  let out = `<line x1="0" y1="${y(seedC).toFixed(1)}" x2="${W}" y2="${y(seedC).toFixed(1)}" stroke="${PALETTE.gold}" stroke-width="1.5" stroke-dasharray="7 7"><title>seed chroma C = ${seedC.toFixed(3)}</title></line>`;
+  rows.forEach((r, i) => {
+    const x = i * slot + (slot - barW) / 2;
+    out += `<rect x="${x.toFixed(1)}" y="${y(r.ceil).toFixed(1)}" width="${barW}" height="${(plotH - y(r.ceil)).toFixed(1)}" fill="none" stroke="${PALETTE.muted}" stroke-width="1.2" stroke-dasharray="3 3"><title>${esc(`sRGB chroma ceiling at L ${r.L.toFixed(2)}, hue ${r.h.toFixed(0)}°: maxC ${r.ceil.toFixed(3)}`)}</title></rect>`;
+    out += `<rect x="${x.toFixed(1)}" y="${y(r.C).toFixed(1)}" width="${barW}" height="${(plotH - y(r.C)).toFixed(1)}" fill="${OURS.scales.blue[r.step]}"><title>${esc(`blue ${r.step}: measured C ${r.C.toFixed(3)} — min(seed, ceiling) predicts ${r.predicted.toFixed(3)}`)}</title></rect>`;
+    out += `<text x="${(i * slot + slot / 2).toFixed(1)}" y="${plotH + 18}" text-anchor="middle" font-size="12" fill="${PALETTE.muted}" font-family="${MONO}">${esc(r.step)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Measured chroma of each generated blue step (filled bars) against the sRGB chroma ceiling at that lightness (dashed outlines) and the seed chroma (gold dashed line): the filled bar always tracks whichever bound is lower.">${out}</svg>`;
+}
+
+const ourStrip = (s) => `<div class="scale-block"><div class="scale-label"><span class="scale-name">${esc(s)} — generated</span><span class="scale-stats">step CV ${OURS.audit[s].step_cv_pct.toFixed(1)}% · L-CV ${OURS.audit[s].L_cv_pct.toFixed(1)}% · ${s === "gray" ? `C ${OURS.audit.gray.max_C < 1e-6 ? "0.0000" : OURS.audit.gray.max_C.toFixed(4)} everywhere` : `hue drift ${OURS.audit[s].hue_drift_deg.toFixed(1)}°`}</span></div>
+  ${colorStripSVG(`Generated ${s}`, Object.values(OURS.scales[s]), Object.keys(OURS.scales[s]), 34)}</div>`;
+
+const principleCard = ({ n, title, formula, receipt, caption }) => `<article class="card principle-card" id="blueprint-${n}">
+  <header class="card-head"><div class="card-title"><h3>${n} · ${esc(title)}</h3></div></header>
+  <div class="formula">${esc(formula)}</div>
+  <div class="scales">${receipt}</div>
+  <p class="steal-evidence">${caption}</p>
+</article>`;
+
+// The Chapter-1.3 reference points, in the same trained-difference units as
+// the JND gate, for the principle-5 caption.
+const OUR_CLOSEST_CHROMATIC = Math.min(...["blue", "red", "green"].map((s) => OURS.audit[s].min_adjacent_diff));
+const grayL = OURS.audit.gray.L;
+const dLLight = grayL[1] - grayL[2], dLDark = grayL[6] - grayL[7]; // representative mid-band L steps
+
+const CH5_CARDS = [
+  principleCard({
+    n: 1, title: "The lightness ladder",
+    formula: "L_i = ladder(i) in perceptual L   — never a % of white or black paint mixed in",
+    receipt: `${ourStrip("blue")}${ourStrip("gray")}`,
+    caption: `The ramp is designed top-down in <em>seen</em> lightness: the gray strip is the blue ramp's own ladder with the color removed, and the two match step for step because gray was built from blue's measured L. Bootstrap mixes paint instead — equal RGB percentages — and Chapter 1.1 showed the cliff that buys. Honesty note: <em>placed in L</em> is not the same as <em>perfectly even in L</em>. The generated ladder eases at both ends and runs two near-constant bands in the middle (≈${dLLight.toFixed(3)} L per step in the light half, ≈${dLDark.toFixed(3)} in the dark half); its mean L-CV of ${OURS.agg.mean_L_cv_pct.toFixed(1)}% ranks 3rd — Bootstrap's machine mixing (${ranking.find((r) => r.key === "bootstrap").mean_L_cv_pct.toFixed(1)}%) and Chakra (${ranking.find((r) => r.key === "chakra").mean_L_cv_pct.toFixed(1)}%) are tighter. The principle buys a ladder that means something to the eye; it doesn't automatically win the evenness column.`,
+  }),
+  principleCard({
+    n: 2, title: "The hue lock",
+    formula: "h_i = h_seed  for every i   — down the ramp, only L and C are allowed to move",
+    receipt: boundaryStripSVG(OUR_BLUE_PAIR.hexA, OUR_BLUE_PAIR.hexB,
+      `Generated blue's first-step hue (${OUR_BLUE_PAIR.h1.toFixed(1)}°) meets its worst-drift hue (${OUR_BLUE_PAIR.h2.toFixed(1)}°) at the midpoint of this strip — both rendered at identical L=${OUR_BLUE_PAIR.L}, C=${OUR_BLUE_PAIR.C}`),
+    caption: `This is Chapter 2.1's test run on ourselves: the generated blue's first-step hue and worst-drift hue, re-rendered at identical lightness and chroma and butted together with no seam drawn. The pair measures ${OUR_BLUE_PAIR.diff.toFixed(4)} — under the page's own ${JND_GATE} near-duplicate gate, the same gate only one shipped pair in the whole audit (Primer gray 4→5) passed — so the seamless strip is earned, not rhetorical. Our worst ramp is ${OURS.agg.worst_drift_scale} at ${OURS.agg.worst_hue_drift_deg.toFixed(1)}°, whose equal-L/C pair measures ${OUR_RED_PAIR.diff.toFixed(4)} — a hair <em>above</em> the gate, so it doesn't get the seamless treatment; that's the gate working. For scale: the best audited system allows ${Math.min(...ranking.map((r) => r.worst_hue_drift_deg)).toFixed(1)}° somewhere in its palette, Primer ${F.primerBlueProof.drift.toFixed(1)}°. Asserted at build time: every generated ramp holds under 3°.`,
+  }),
+  principleCard({
+    n: 3, title: "Chroma respects the gamut",
+    formula: "C_i = min(C_seed, maxC(L_i, h))   — clip chroma, never rotate hue",
+    receipt: chromaEnvelopeSVG(),
+    caption: `Filled bars: the measured chroma of each generated blue step. Dashed outlines: the most chroma sRGB can physically show at that step's lightness and this hue. Gold dashes: the seed's chroma. The filled bar always hugs whichever bound is lower — measured within ${OURS.chromaLaw.blue.worstDev.toFixed(3)} of <code>min(seed, ceiling)</code> at all ${OURS.chromaLaw.blue.rows.length} steps, asserted under 0.025 on all three ramps. This one formula is where much of Chapter 2's hue drift comes from when it's done wrong: a dark step wants more chroma than sRGB has at that lightness, something must give, and clipping in RGB gives up <em>hue</em> — that's how dark blues turn violet. The right thing to surrender is chroma.`,
+  }),
+  principleCard({
+    n: 4, title: "Gray means gray",
+    formula: "gray_i = LCh [L_i, 0, 0]   — chroma is zero by construction, on the blue ramp's ladder",
+    receipt: receiptChipsSVG(OURS.scales.gray["700"], hl.genToHex(hl.genFromLch([hl.genFromHex(OURS.scales.gray["700"])[0], 0, 0])),
+      `shipped gray-700 · ${OURS.scales.gray["700"]}`, `neutral twin · ${OURS.scales.gray["700"]}`),
+    caption: `Chapter 2.2's test, run on ourselves: the worst chroma across all eleven generated grays is ${OURS.agg.gray_max_C < 1e-6 ? "0.0000" : OURS.agg.gray_max_C.toFixed(4)}, so the shipped chip and its rebuilt neutral twin above are literally the same color — the property only Material and Radix ship, and the one every other audited system trades away for a cool tint. You don't earn this gray by tuning; you get it free the moment gray is <em>defined</em> as C = 0 instead of "blue with the chroma turned down."`,
+  }),
+  principleCard({
+    n: 5, title: "Steps clear the JND",
+    formula: `min_i difference(step_i, step_i+1) ≥ ${JND_GATE}   — every adjacent pair, checked with this page's own gate`,
+    receipt: receiptChipsSVG(OURS.scales.gray["50"], OURS.scales.gray["100"],
+      `gray 50 · ${OURS.scales.gray["50"]}`, `gray 100 · ${OURS.scales.gray["100"]}`),
+    caption: `Every adjacent pair in all four generated scales is checked against the same ${JND_GATE} near-duplicate threshold the honesty gate uses — asserted at build time. The chips above are our closest pair anywhere, gray 50→100, at ${OURS.agg.min_adjacent_diff.toFixed(3)} (${(OURS.agg.min_adjacent_diff / JND_GATE).toFixed(1)}× the gate); the closest chromatic pair measures ${OUR_CLOSEST_CHROMATIC.toFixed(3)}. Honest context from Chapter 1.3: Material's blue 400→500 hover step measures ${fmt(CTX.matPairDiff, 3)} in the same units — our floor is about the same size as theirs. The difference is placement: ours sits at the extreme pale end of the gray ramp, not on the button-hover slot where a state change has to register.`,
+  }),
+];
+
+const CH5 = [
+  chapterIntro({
+    id: "ch5", num: 5, title: "If we built one",
+    headline: "The math is not a secret.",
+    intro: `Everything above is measurable — which means it's buildable. So we built one: three seed colors in, a full palette out, generated at build time by helmlab's <code>semanticScale</code> (no hex in this chapter is hand-picked), then pushed through the <em>exact</em> pipeline that audited the six systems. What follows is the output, its scores — wins and losses alike — and the five formulas it obeys. Steal the principles; the library is optional.`,
+  }),
+
+  proofBlock({
+    id: "seventh-column",
+    kicker: "5.1 · The generated palette",
+    headline: "Same pipeline, seventh column.",
+    deck: `Seeds: a blue, red and green many codebases already carry (<code>#3b82f6</code>, <code>#ef4444</code>, <code>#22c55e</code> — each anchored untouched at step 500), plus a true gray built from the blue ramp's own lightness ladder at C = 0. Below: the four scales as generated, then the leaderboard's own scoreboard with our column added — ranked where it actually lands, not where we'd like it to.`,
+    visual: `${ourStrip("blue")}${ourStrip("red")}${ourStrip("green")}${ourStrip("gray")}${cmpTableHTML()}`,
+    caption: `Read the wins and losses in the same breath. Wins: worst hue drift ${OURS.agg.worst_hue_drift_deg.toFixed(1)}° across three chromatic ramps — the best audited system allows ${Math.min(...ranking.map((r) => r.worst_hue_drift_deg)).toFixed(1)}°, more than four times as much (asserted); an ink-true gray (C 0.0000, tying Material and Radix); zero lightness reversals; and no adjacent step anywhere under the page's ${JND_GATE} near-duplicate gate. Losses, stated plainly: on <em>mean step CV — the audit's own headline ranking</em> — the generated palette lands ${OUR_RANK}th of 7, behind Chakra, Primer and Bootstrap; on mean darkness-ladder evenness it's 3rd, behind Bootstrap and Chakra; and its blue ships a ${OURS.audit.blue.step_max_min_ratio.toFixed(1)}× max/min step spread — the same size as the Bootstrap cliff this audit <em>opened</em> with (${rx(ratio(F.bsBlueBig, F.bsBlueSmall))}). Anchoring your exact seed at 500 costs evenness around it. The math buys correctness by construction — hue, gray, monotonicity, JND; it does not automatically buy the evenness that careful hands (or Bootstrap's mixing) can.`,
+    small: `Generated at build time: hl.semanticScale(seed) per chromatic ramp (seed preserved at 500, asserted); gray = genFromLch([L_i, 0, 0]) over the blue ramp's measured L ladder. Audited by a 1:1 replica of the scorecard pipeline, parity-checked against all 24 audited scales — the build fails on any disagreement. Every claim in this caption is asserted, including the losses: if a future helmlab version stops losing step CV to Chakra, Primer and Bootstrap, the build fails until this text is rewritten. Mid-row contrast: like all six systems, every generated 500 holds ≥ ${AA}:1 against white or black (green-500 fails white at ${OURS.mid.green.crWhite.toFixed(2)}:1 and holds black at ${OURS.mid.green.crBlack.toFixed(2)}:1 — see 5.3).`,
+  }),
+
+  `<section class="proof" id="blueprint">
+  <span class="proof-kicker">5.2 · The blueprint</span>
+  <h2 class="proof-head">Five principles, five receipts.</h2>
+  <p class="proof-deck">Each principle is one line of math; each receipt is measured from the palette above — the same one in the table. None of this needs helmlab specifically: any perceptual color space with a lightness/chroma/hue form and a gamut mapping that holds hue can implement all five.</p>
+  ${CH5_CARDS.join("\n")}
+</section>`,
+
+  proofBlock({
+    id: "not-included",
+    kicker: "5.3 · What the math doesn't buy",
+    headline: "A generator gives you geometry, not judgment.",
+    deck: "",
+    visual: "",
+    caption: `Four things this chapter's math will not hand you. <em>Hand-tuned optical corrections</em> — Material's 2014 palette was adjusted shade by shade by human eyes, and Chapter 4 showed hand-tuning can beat generation on evenness (Primer's red at step CV ${F.primerRedCv.toFixed(1)}% beats every generated ramp here). <em>Brand voice</em> — a generator anchors your seed faithfully; it cannot tell you whether your seed is right, and it inherits your seed's flaws: our green-500 fails white text at ${OURS.mid.green.crWhite.toFixed(2)}:1, almost exactly like the Tailwind green it resembles (${MID.tailwind.cells.green.crWhite.toFixed(2)}:1), because generation preserves the seed <em>by design</em>. <em>Role semantics</em> — Radix's steps name jobs (backgrounds, states, text; Chapter 4), and no formula assigns your team's meanings to a dial. And <em>the last word in near-neutral ramps</em> — helmlab's own published benchmark keeps honesty tables where OKLab-family spaces score slightly better on near-achromatic steps; if your palette lives close to gray, an OKLab implementation of these same five formulas is a fine choice (<a href="https://helmlab.space/benchmark">helmlab.space/benchmark</a>). The principles are space-portable. That's the point: steal the principles, not necessarily the library.`,
+    small: `Every number above is computed in this build; the green-500 white-text failure and the step-CV losses are asserted so this section cannot quietly become false. The tool used here is credited in the footer — this chapter's argument doesn't depend on it.`,
+  }),
+];
+
 // ---------------------------------------------------------------------------
 // Leaderboard
 // ---------------------------------------------------------------------------
 
-const ranking = scorecard.ranking_by_mean_step_cv;
 const leaderboardRows = ranking
   .map(
     (r, i) => `<tr>
@@ -859,7 +1157,7 @@ const html = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You call it blue-500. Is it? — The Open-Source Color Audit</title>
-<meta name="description" content="We measured the color systems everyone copies — Tailwind, Material, Bootstrap, Primer, Radix, Chakra — in four chapters: step size, hue honesty, visual weight, and what each system does best. Reproducible.">
+<meta name="description" content="We measured the color systems everyone copies — Tailwind, Material, Bootstrap, Primer, Radix, Chakra — in five chapters: step size, hue honesty, visual weight, what each system does best, and what a palette built on the math looks like. Reproducible.">
 <style>
 :root{
   --bg:${PALETTE.bg}; --card:${PALETTE.card}; --line:#2a2a31;
@@ -933,6 +1231,15 @@ section{padding:72px 0;border-top:1px solid var(--line)}
 .findings li{font-size:16px}
 .note-num{display:block;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 
+/* chapter 5 */
+.cmp-wrap{margin-top:38px}
+tr.ours-row td{background:#16161d}
+tr.ours-row .sys-cell{color:var(--gold)}
+.ours-tag{display:inline-block;margin-left:8px;padding:2px 9px;border:1px solid var(--gold);border-radius:99px;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;vertical-align:2px}
+td.best{color:var(--pass);font-weight:700}
+.principle-card h3{font-size:clamp(20px,2.6vw,28px)}
+.principle-card .formula{margin-top:16px}
+
 /* leaderboard */
 table{width:100%;border-collapse:collapse;margin-top:12px}
 th{text-align:left;color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -968,12 +1275,13 @@ footer{border-top:1px solid var(--line);margin-top:0;padding:64px 24px 90px}
 <section class="howto" id="how-to-read">
   <h2>How to read this page</h2>
   <p>Every swatch here is the real, untouched color from each system's published package. We measured how the tokens actually <em>look</em> — not how their names sound — and turned the results into pictures you can judge with your own eyes.</p>
-  <p>The findings come in four chapters, each a different question a designer actually asks:</p>
+  <p>The findings come in five chapters, each a different question a designer actually asks:</p>
   <ol class="toc">
     <li><a href="#ch1">Steps</a> — does "+1" always mean one visual step?</li>
     <li><a href="#ch2">Hue</a> — is your blue still blue? Is your gray even gray?</li>
     <li><a href="#ch3">Weight</a> — do same-numbered tokens carry the same weight, and what does that do to contrast?</li>
     <li><a href="#ch4">What to steal</a> — the one measured trait each system does best.</li>
+    <li><a href="#ch5">If we built one</a> — a palette generated from the math, audited by its own pipeline.</li>
   </ol>
   <p>Headlines say what breaks; the small print underneath carries the numbers, and the full table waits at the <a href="#numbers">bottom</a>.</p>
 </section>
@@ -985,6 +1293,8 @@ ${CH2.join("\n")}
 ${CH3.join("\n")}
 
 ${CH4.join("\n")}
+
+${CH5.join("\n")}
 
 <section id="numbers">
   <h2>The numbers, if you want them</h2>
@@ -1045,7 +1355,14 @@ white-text contrast = hl.contrastRatio('#ffffff', token);  PASS ⇔ ≥ ${AA} (W
   <h4>8 · The near-duplicate honesty gate — Chapter 1.2</h4>
   <div class="formula">spot-the-boundary / seamless side-by-side visual  ⇒  hl.difference(pair) &lt; ${JND_GATE}
 otherwise the BUILD FAILS</div>
-  <p>Visual proof patterns are type-checked against the claim they make: a visual that invites you to struggle to see a difference ("spot the boundary") is only honest if the measured difference is genuinely sub-threshold — being a ramp's <em>smallest</em> step does not make a pair perceptually <em>small</em>. Exactly one pair in this audit qualifies: Primer gray 4→5 (trained difference ${fmt(CTX.primerGrayPairDiff, 3)}). The audit's smallest chromatic step, Material blue 400→500, measures ${fmt(CTX.matPairDiff, 3)} on a metric that saturates near ${fmt(CTX.bwDiff, 2)} — clearly visible — so the build asserts it is <em>rejected</em> by the gate and shows it only as a receipt-chip pair inside Chapter 1.3.</p>
+  <p>Visual proof patterns are type-checked against the claim they make: a visual that invites you to struggle to see a difference ("spot the boundary") is only honest if the measured difference is genuinely sub-threshold — being a ramp's <em>smallest</em> step does not make a pair perceptually <em>small</em>. Among shipped tokens, exactly one pair qualifies: Primer gray 4→5 (trained difference ${fmt(CTX.primerGrayPairDiff, 3)}). The audit's smallest chromatic step, Material blue 400→500, measures ${fmt(CTX.matPairDiff, 3)} on a metric that saturates near ${fmt(CTX.bwDiff, 2)} — clearly visible — so the build asserts it is <em>rejected</em> by the gate and shows it only as a receipt-chip pair inside Chapter 1.3. One other visual passes the gate: Chapter 5's hue-lock receipt (${fmt(OUR_BLUE_PAIR.diff, 4)}), a <em>constructed</em> equal-L/C pair rather than a shipped ramp step — and the generated red's pair (${fmt(OUR_RED_PAIR.diff, 4)}) sits just above the threshold, so it is denied the seamless treatment, which is the gate doing its job on our own palette too.</p>
+
+  <h4>9 · The generated reference palette — Chapter 5</h4>
+  <div class="formula">scales   = hl.semanticScale(seed)  for ${Object.values(OUR_SEEDS).join(" / ")}   (seed preserved at step 500 — asserted)
+gray_i   = genFromLch([L_i, 0, 0])  over the blue ramp's measured L ladder (matching ladders by construction)
+audit    = a 1:1 replica of this scorecard's pipeline, parity-checked against all 24 audited scales
+maxC(L,h) = the chroma that survives genFromLch([L, 0.6, h]) → sRGB → back  (helmlab clips C, holds L and h)</div>
+  <p>Chapter 5's column is only meaningful if it comes from the same math as the other six, so the build re-derives every scorecard scale with the replica pipeline and fails on any disagreement. Both the wins (hue lock &lt; 3° and at least 4× tighter than the best audited system, ink-true gray, zero reversals, every adjacent step over the ${JND_GATE} JND gate, the chroma law within 0.025 on all three ramps) and the <em>losses</em> (4th of 7 on mean step CV behind Chakra, Primer and Bootstrap; 3rd on mean L-CV behind Bootstrap and Chakra; a ${OURS.audit.blue.step_max_min_ratio.toFixed(1)}× max/min cliff inside the generated blue; green-500 failing white text) are asserted — if a future helmlab version fixes a disclosed loss, the build fails until the text is updated, so the honesty cannot go stale in either direction.</p>
 
   <h4>Provenance &amp; limitations</h4>
   <ul>

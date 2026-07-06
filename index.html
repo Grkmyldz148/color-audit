@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>You call it blue-500. Is it? — The Open-Source Color Audit</title>
-<meta name="description" content="We measured the color systems everyone copies — Tailwind, Material, Bootstrap, Primer, Radix, Chakra — in four chapters: step size, hue honesty, visual weight, and what each system does best. Reproducible.">
+<meta name="description" content="We measured the color systems everyone copies — Tailwind, Material, Bootstrap, Primer, Radix, Chakra — in five chapters: step size, hue honesty, visual weight, what each system does best, and what a palette built on the math looks like. Reproducible.">
 <style>
 :root{
   --bg:#0b0b0d; --card:#121216; --line:#2a2a31;
@@ -78,6 +78,15 @@ section{padding:72px 0;border-top:1px solid var(--line)}
 .findings li{font-size:16px}
 .note-num{display:block;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
 
+/* chapter 5 */
+.cmp-wrap{margin-top:38px}
+tr.ours-row td{background:#16161d}
+tr.ours-row .sys-cell{color:var(--gold)}
+.ours-tag{display:inline-block;margin-left:8px;padding:2px 9px;border:1px solid var(--gold);border-radius:99px;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;vertical-align:2px}
+td.best{color:var(--pass);font-weight:700}
+.principle-card h3{font-size:clamp(20px,2.6vw,28px)}
+.principle-card .formula{margin-top:16px}
+
 /* leaderboard */
 table{width:100%;border-collapse:collapse;margin-top:12px}
 th{text-align:left;color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -113,12 +122,13 @@ footer{border-top:1px solid var(--line);margin-top:0;padding:64px 24px 90px}
 <section class="howto" id="how-to-read">
   <h2>How to read this page</h2>
   <p>Every swatch here is the real, untouched color from each system's published package. We measured how the tokens actually <em>look</em> — not how their names sound — and turned the results into pictures you can judge with your own eyes.</p>
-  <p>The findings come in four chapters, each a different question a designer actually asks:</p>
+  <p>The findings come in five chapters, each a different question a designer actually asks:</p>
   <ol class="toc">
     <li><a href="#ch1">Steps</a> — does "+1" always mean one visual step?</li>
     <li><a href="#ch2">Hue</a> — is your blue still blue? Is your gray even gray?</li>
     <li><a href="#ch3">Weight</a> — do same-numbered tokens carry the same weight, and what does that do to contrast?</li>
     <li><a href="#ch4">What to steal</a> — the one measured trait each system does best.</li>
+    <li><a href="#ch5">If we built one</a> — a palette generated from the math, audited by its own pipeline.</li>
   </ol>
   <p>Headlines say what breaks; the small print underneath carries the numbers, and the full table waits at the <a href="#numbers">bottom</a>.</p>
 </section>
@@ -357,7 +367,7 @@ footer{border-top:1px solid var(--line);margin-top:0;padding:64px 24px 90px}
 <section class="chapter" id="ch4">
   <span class="chapter-kicker">Chapter 4 · What to steal</span>
   <h2 class="chapter-head">Every system does one thing better than everyone else.</h2>
-  <p class="chapter-intro">The first three chapters read like a list of charges. This one is the constructive close: for each system, the single measured trait worth copying into your own palette — with the number that proves it, and an honest note on what not to copy along with it.</p>
+  <p class="chapter-intro">The first three chapters read like a list of charges. This one turns constructive: for each system, the single measured trait worth copying into your own palette — with the number that proves it, and an honest note on what not to copy along with it. Chapter 5 then asks the obvious next question: what does a palette look like when it's built on the math from the start?</p>
 </section>
 <article class="card steal-card" id="steal-bootstrap">
   <header class="card-head">
@@ -472,6 +482,146 @@ footer{border-top:1px solid var(--line);margin-top:0;padding:64px 24px 90px}
   <p class="proof-small">mid = step 500 (Radix: step 9, Primer: step 5). WCAG contrast vs #fff and #000; "fails both" count = 0 for all six systems. Monotonicity violations = 0 across 228 steps.</p>
 </section>
 
+<section class="chapter" id="ch5">
+  <span class="chapter-kicker">Chapter 5 · If we built one</span>
+  <h2 class="chapter-head">The math is not a secret.</h2>
+  <p class="chapter-intro">Everything above is measurable — which means it's buildable. So we built one: three seed colors in, a full palette out, generated at build time by helmlab's <code>semanticScale</code> (no hex in this chapter is hand-picked), then pushed through the <em>exact</em> pipeline that audited the six systems. What follows is the output, its scores — wins and losses alike — and the five formulas it obeys. Steal the principles; the library is optional.</p>
+</section>
+<section class="proof " id="seventh-column">
+  <span class="proof-kicker">5.1 · The generated palette</span>
+  <h2 class="proof-head">Same pipeline, seventh column.</h2>
+  <p class="proof-deck">Seeds: a blue, red and green many codebases already carry (<code>#3b82f6</code>, <code>#ef4444</code>, <code>#22c55e</code> — each anchored untouched at step 500), plus a true gray built from the blue ramp's own lightness ladder at C = 0. Below: the four scales as generated, then the leaderboard's own scoreboard with our column added — ranked where it actually lands, not where we'd like it to.</p>
+  <div class="proof-visual"><div class="scale-block"><div class="scale-label"><span class="scale-name">blue — generated</span><span class="scale-stats">step CV 59.9% · L-CV 25.8% · hue drift 1.9°</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated blue" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#e7efff"><title>Generated blue 50: #e7efff</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#d4e3ff"><title>Generated blue 100: #d4e3ff</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#aecdff"><title>Generated blue 200: #aecdff</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#86b6ff"><title>Generated blue 300: #86b6ff</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#5c9dff"><title>Generated blue 400: #5c9dff</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#3b82f6"><title>Generated blue 500: #3b82f6</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#2661d3"><title>Generated blue 600: #2661d3</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#0b41b1"><title>Generated blue 700: #0b41b1</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#002684"><title>Generated blue 800: #002684</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#001057"><title>Generated blue 900: #001057</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#000046"><title>Generated blue 950: #000046</title></rect></svg></div><div class="scale-block"><div class="scale-label"><span class="scale-name">red — generated</span><span class="scale-stats">step CV 31.4% · L-CV 27.7% · hue drift 2.7°</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated red" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#ffeae7"><title>Generated red 50: #ffeae7</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#ffd9d5"><title>Generated red 100: #ffd9d5</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#ffb8b1"><title>Generated red 200: #ffb8b1</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#ff948c"><title>Generated red 300: #ff948c</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#ff6962"><title>Generated red 400: #ff6962</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#ef4444"><title>Generated red 500: #ef4444</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#c91725"><title>Generated red 600: #c91725</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#9a0015"><title>Generated red 700: #9a0015</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#69000c"><title>Generated red 800: #69000c</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#3f0005"><title>Generated red 900: #3f0005</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#2a0002"><title>Generated red 950: #2a0002</title></rect></svg></div><div class="scale-block"><div class="scale-label"><span class="scale-name">green — generated</span><span class="scale-stats">step CV 43.3% · L-CV 44.1% · hue drift 0.6°</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated green" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#d6ffdc"><title>Generated green 50: #d6ffdc</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#b2ffc1"><title>Generated green 100: #b2ffc1</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#68fa8f"><title>Generated green 200: #68fa8f</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#54e87f"><title>Generated green 300: #54e87f</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#3ed76e"><title>Generated green 400: #3ed76e</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#22c55e"><title>Generated green 500: #22c55e</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#009c45"><title>Generated green 600: #009c45</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#007231"><title>Generated green 700: #007231</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#004a1d"><title>Generated green 800: #004a1d</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#00280c"><title>Generated green 900: #00280c</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#001705"><title>Generated green 950: #001705</title></rect></svg></div><div class="scale-block"><div class="scale-label"><span class="scale-name">gray — generated</span><span class="scale-stats">step CV 47.4% · L-CV 25.1% · C 0.0000 everywhere</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated gray" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#efefef"><title>Generated gray 50: #efefef</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#e2e2e2"><title>Generated gray 100: #e2e2e2</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#cbcbcb"><title>Generated gray 200: #cbcbcb</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#b4b4b4"><title>Generated gray 300: #b4b4b4</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#9e9e9e"><title>Generated gray 400: #9e9e9e</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#878787"><title>Generated gray 500: #878787</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#6a6a6a"><title>Generated gray 600: #6a6a6a</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#4e4e4e"><title>Generated gray 700: #4e4e4e</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#343434"><title>Generated gray 800: #343434</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#1d1d1d"><title>Generated gray 900: #1d1d1d</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#111111"><title>Generated gray 950: #111111</title></rect></svg></div><div class="cmp-wrap"><table>
+    <thead><tr><th>#</th><th>Palette</th>
+      <th class="num">Mean step CV</th><th class="num">Mean L-CV</th>
+      <th class="num">Worst hue drift</th><th class="num">Worst gray tint C</th>
+      <th class="num">L-reversals</th></tr></thead>
+    <tbody><tr>
+    <td class="rank-cell">1</td>
+    <td class="sys-cell">Chakra</td>
+    <td class="num best">41.5%</td>
+    <td class="num">28.2%</td>
+    <td class="num">20.5°</td>
+    <td class="num">0.0626</td>
+    <td class="num">0</td>
+  </tr>
+<tr>
+    <td class="rank-cell">2</td>
+    <td class="sys-cell">GitHub Primer</td>
+    <td class="num">44.2%</td>
+    <td class="num">41.4%</td>
+    <td class="num">27.6°</td>
+    <td class="num">0.0376</td>
+    <td class="num">0</td>
+  </tr>
+<tr>
+    <td class="rank-cell">3</td>
+    <td class="sys-cell">Bootstrap</td>
+    <td class="num">44.6%</td>
+    <td class="num best">24.1%</td>
+    <td class="num">11.8°</td>
+    <td class="num">0.0269</td>
+    <td class="num">0</td>
+  </tr>
+<tr class="ours-row">
+    <td class="rank-cell">4</td>
+    <td class="sys-cell">Generated (this chapter) <span class="ours-tag">generated</span></td>
+    <td class="num">45.5%</td>
+    <td class="num">30.7%</td>
+    <td class="num best">2.7°</td>
+    <td class="num best">0.0000</td>
+    <td class="num">0</td>
+  </tr>
+<tr>
+    <td class="rank-cell">5</td>
+    <td class="sys-cell">Tailwind</td>
+    <td class="num">45.6%</td>
+    <td class="num">43.1%</td>
+    <td class="num">13.2°</td>
+    <td class="num">0.0626</td>
+    <td class="num">0</td>
+  </tr>
+<tr>
+    <td class="rank-cell">6</td>
+    <td class="sys-cell">Material Design</td>
+    <td class="num">56.6%</td>
+    <td class="num">42.9%</td>
+    <td class="num">20.8°</td>
+    <td class="num best">0.0000</td>
+    <td class="num">0</td>
+  </tr>
+<tr>
+    <td class="rank-cell">7</td>
+    <td class="sys-cell">Radix</td>
+    <td class="num">101.5%</td>
+    <td class="num">95.9%</td>
+    <td class="num">17.2°</td>
+    <td class="num best">0.0000</td>
+    <td class="num">0</td>
+  </tr></tbody></table></div></div>
+  <p class="proof-caption">Read the wins and losses in the same breath. Wins: worst hue drift 2.7° across three chromatic ramps — the best audited system allows 11.8°, more than four times as much (asserted); an ink-true gray (C 0.0000, tying Material and Radix); zero lightness reversals; and no adjacent step anywhere under the page's 0.025 near-duplicate gate. Losses, stated plainly: on <em>mean step CV — the audit's own headline ranking</em> — the generated palette lands 4th of 7, behind Chakra, Primer and Bootstrap; on mean darkness-ladder evenness it's 3rd, behind Bootstrap and Chakra; and its blue ships a 8.0× max/min step spread — the same size as the Bootstrap cliff this audit <em>opened</em> with (8×). Anchoring your exact seed at 500 costs evenness around it. The math buys correctness by construction — hue, gray, monotonicity, JND; it does not automatically buy the evenness that careful hands (or Bootstrap's mixing) can.</p>
+  <p class="proof-small">Generated at build time: hl.semanticScale(seed) per chromatic ramp (seed preserved at 500, asserted); gray = genFromLch([L_i, 0, 0]) over the blue ramp's measured L ladder. Audited by a 1:1 replica of the scorecard pipeline, parity-checked against all 24 audited scales — the build fails on any disagreement. Every claim in this caption is asserted, including the losses: if a future helmlab version stops losing step CV to Chakra, Primer and Bootstrap, the build fails until this text is rewritten. Mid-row contrast: like all six systems, every generated 500 holds ≥ 4.5:1 against white or black (green-500 fails white at 2.28:1 and holds black at 9.22:1 — see 5.3).</p>
+</section>
+<section class="proof" id="blueprint">
+  <span class="proof-kicker">5.2 · The blueprint</span>
+  <h2 class="proof-head">Five principles, five receipts.</h2>
+  <p class="proof-deck">Each principle is one line of math; each receipt is measured from the palette above — the same one in the table. None of this needs helmlab specifically: any perceptual color space with a lightness/chroma/hue form and a gamut mapping that holds hue can implement all five.</p>
+  <article class="card principle-card" id="blueprint-1">
+  <header class="card-head"><div class="card-title"><h3>1 · The lightness ladder</h3></div></header>
+  <div class="formula">L_i = ladder(i) in perceptual L   — never a % of white or black paint mixed in</div>
+  <div class="scales"><div class="scale-block"><div class="scale-label"><span class="scale-name">blue — generated</span><span class="scale-stats">step CV 59.9% · L-CV 25.8% · hue drift 1.9°</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated blue" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#e7efff"><title>Generated blue 50: #e7efff</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#d4e3ff"><title>Generated blue 100: #d4e3ff</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#aecdff"><title>Generated blue 200: #aecdff</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#86b6ff"><title>Generated blue 300: #86b6ff</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#5c9dff"><title>Generated blue 400: #5c9dff</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#3b82f6"><title>Generated blue 500: #3b82f6</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#2661d3"><title>Generated blue 600: #2661d3</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#0b41b1"><title>Generated blue 700: #0b41b1</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#002684"><title>Generated blue 800: #002684</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#001057"><title>Generated blue 900: #001057</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#000046"><title>Generated blue 950: #000046</title></rect></svg></div><div class="scale-block"><div class="scale-label"><span class="scale-name">gray — generated</span><span class="scale-stats">step CV 47.4% · L-CV 25.1% · C 0.0000 everywhere</span></div>
+  <svg viewBox="0 0 1000 34" width="100%" role="img" aria-label="Generated gray" preserveAspectRatio="none"><rect x="0.00" y="0" width="88.18" height="34" fill="#efefef"><title>Generated gray 50: #efefef</title></rect><rect x="91.18" y="0" width="88.18" height="34" fill="#e2e2e2"><title>Generated gray 100: #e2e2e2</title></rect><rect x="182.36" y="0" width="88.18" height="34" fill="#cbcbcb"><title>Generated gray 200: #cbcbcb</title></rect><rect x="273.55" y="0" width="88.18" height="34" fill="#b4b4b4"><title>Generated gray 300: #b4b4b4</title></rect><rect x="364.73" y="0" width="88.18" height="34" fill="#9e9e9e"><title>Generated gray 400: #9e9e9e</title></rect><rect x="455.91" y="0" width="88.18" height="34" fill="#878787"><title>Generated gray 500: #878787</title></rect><rect x="547.09" y="0" width="88.18" height="34" fill="#6a6a6a"><title>Generated gray 600: #6a6a6a</title></rect><rect x="638.27" y="0" width="88.18" height="34" fill="#4e4e4e"><title>Generated gray 700: #4e4e4e</title></rect><rect x="729.45" y="0" width="88.18" height="34" fill="#343434"><title>Generated gray 800: #343434</title></rect><rect x="820.64" y="0" width="88.18" height="34" fill="#1d1d1d"><title>Generated gray 900: #1d1d1d</title></rect><rect x="911.82" y="0" width="88.18" height="34" fill="#111111"><title>Generated gray 950: #111111</title></rect></svg></div></div>
+  <p class="steal-evidence">The ramp is designed top-down in <em>seen</em> lightness: the gray strip is the blue ramp's own ladder with the color removed, and the two match step for step because gray was built from blue's measured L. Bootstrap mixes paint instead — equal RGB percentages — and Chapter 1.1 showed the cliff that buys. Honesty note: <em>placed in L</em> is not the same as <em>perfectly even in L</em>. The generated ladder eases at both ends and runs two near-constant bands in the middle (≈0.085 L per step in the light half, ≈0.113 in the dark half); its mean L-CV of 30.7% ranks 3rd — Bootstrap's machine mixing (24.1%) and Chakra (28.2%) are tighter. The principle buys a ladder that means something to the eye; it doesn't automatically win the evenness column.</p>
+</article>
+<article class="card principle-card" id="blueprint-2">
+  <header class="card-head"><div class="card-title"><h3>2 · The hue lock</h3></div></header>
+  <div class="formula">h_i = h_seed  for every i   — down the ramp, only L and C are allowed to move</div>
+  <div class="scales"><svg viewBox="0 0 1000 120" width="100%" height="120" role="img" aria-label="Generated blue's first-step hue (264.7°) meets its worst-drift hue (262.8°) at the midpoint of this strip — both rendered at identical L=0.6, C=0.2" preserveAspectRatio="none"><rect x="0" y="0" width="500" height="120" fill="#6691de"/><rect x="500" y="0" width="500" height="120" fill="#6292de"/><title>Generated blue's first-step hue (264.7°) meets its worst-drift hue (262.8°) at the midpoint of this strip — both rendered at identical L=0.6, C=0.2</title></svg></div>
+  <p class="steal-evidence">This is Chapter 2.1's test run on ourselves: the generated blue's first-step hue and worst-drift hue, re-rendered at identical lightness and chroma and butted together with no seam drawn. The pair measures 0.0121 — under the page's own 0.025 near-duplicate gate, the same gate only one shipped pair in the whole audit (Primer gray 4→5) passed — so the seamless strip is earned, not rhetorical. Our worst ramp is red at 2.7°, whose equal-L/C pair measures 0.0297 — a hair <em>above</em> the gate, so it doesn't get the seamless treatment; that's the gate working. For scale: the best audited system allows 11.8° somewhere in its palette, Primer 27.6°. Asserted at build time: every generated ramp holds under 3°.</p>
+</article>
+<article class="card principle-card" id="blueprint-3">
+  <header class="card-head"><div class="card-title"><h3>3 · Chroma respects the gamut</h3></div></header>
+  <div class="formula">C_i = min(C_seed, maxC(L_i, h))   — clip chroma, never rotate hue</div>
+  <div class="scales"><svg viewBox="0 0 1000 216" width="100%" role="img" aria-label="Measured chroma of each generated blue step (filled bars) against the sRGB chroma ceiling at that lightness (dashed outlines) and the seed chroma (gold dashed line): the filled bar always tracks whichever bound is lower."><line x1="0" y1="53.7" x2="1000" y2="53.7" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="7 7"><title>seed chroma C = 0.298</title></line><rect x="17.5" y="172.3" width="56" height="17.7" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.95, hue 265°: maxC 0.039</title></rect><rect x="17.5" y="172.3" width="56" height="17.7" fill="#e7efff"><title>blue 50: measured C 0.039 — min(seed, ceiling) predicts 0.039</title></rect><text x="45.5" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">50</text><rect x="108.4" y="158.8" width="56" height="31.2" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.90, hue 264°: maxC 0.068</title></rect><rect x="108.4" y="158.8" width="56" height="31.2" fill="#d4e3ff"><title>blue 100: measured C 0.068 — min(seed, ceiling) predicts 0.068</title></rect><text x="136.4" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">100</text><rect x="199.3" y="132.6" width="56" height="57.4" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.82, hue 263°: maxC 0.125</title></rect><rect x="199.3" y="132.6" width="56" height="57.4" fill="#aecdff"><title>blue 200: measured C 0.125 — min(seed, ceiling) predicts 0.125</title></rect><text x="227.3" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">200</text><rect x="290.2" y="104.5" width="56" height="85.5" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.73, hue 263°: maxC 0.187</title></rect><rect x="290.2" y="104.5" width="56" height="85.5" fill="#86b6ff"><title>blue 300: measured C 0.187 — min(seed, ceiling) predicts 0.187</title></rect><text x="318.2" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">300</text><rect x="381.1" y="74.5" width="56" height="115.5" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.65, hue 263°: maxC 0.252</title></rect><rect x="381.1" y="74.5" width="56" height="115.5" fill="#5c9dff"><title>blue 400: measured C 0.252 — min(seed, ceiling) predicts 0.252</title></rect><text x="409.1" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">400</text><rect x="472.0" y="42.4" width="56" height="147.6" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.56, hue 263°: maxC 0.322</title></rect><rect x="472.0" y="53.7" width="56" height="136.3" fill="#3b82f6"><title>blue 500: measured C 0.298 — min(seed, ceiling) predicts 0.298</title></rect><text x="500.0" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">500</text><rect x="562.9" y="20.4" width="56" height="169.6" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.45, hue 263°: maxC 0.370</title></rect><rect x="562.9" y="53.7" width="56" height="136.3" fill="#2661d3"><title>blue 600: measured C 0.298 — min(seed, ceiling) predicts 0.298</title></rect><text x="590.9" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">600</text><rect x="653.8" y="40.8" width="56" height="149.2" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.33, hue 263°: maxC 0.326</title></rect><rect x="653.8" y="53.2" width="56" height="136.8" fill="#0b41b1"><title>blue 700: measured C 0.299 — min(seed, ceiling) predicts 0.298</title></rect><text x="681.8" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">700</text><rect x="744.7" y="68.1" width="56" height="121.9" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.22, hue 263°: maxC 0.266</title></rect><rect x="744.7" y="69.1" width="56" height="120.9" fill="#002684"><title>blue 800: measured C 0.264 — min(seed, ceiling) predicts 0.266</title></rect><text x="772.7" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">800</text><rect x="835.6" y="88.1" width="56" height="101.9" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.11, hue 263°: maxC 0.222</title></rect><rect x="835.6" y="90.8" width="56" height="99.2" fill="#001057"><title>blue 900: measured C 0.217 — min(seed, ceiling) predicts 0.222</title></rect><text x="863.6" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">900</text><rect x="926.5" y="90.7" width="56" height="99.3" fill="none" stroke="#a8a8b3" stroke-width="1.2" stroke-dasharray="3 3"><title>sRGB chroma ceiling at L 0.05, hue 263°: maxC 0.217</title></rect><rect x="926.5" y="90.7" width="56" height="99.3" fill="#000046"><title>blue 950: measured C 0.217 — min(seed, ceiling) predicts 0.217</title></rect><text x="954.5" y="208" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">950</text></svg></div>
+  <p class="steal-evidence">Filled bars: the measured chroma of each generated blue step. Dashed outlines: the most chroma sRGB can physically show at that step's lightness and this hue. Gold dashes: the seed's chroma. The filled bar always hugs whichever bound is lower — measured within 0.006 of <code>min(seed, ceiling)</code> at all 11 steps, asserted under 0.025 on all three ramps. This one formula is where much of Chapter 2's hue drift comes from when it's done wrong: a dark step wants more chroma than sRGB has at that lightness, something must give, and clipping in RGB gives up <em>hue</em> — that's how dark blues turn violet. The right thing to surrender is chroma.</p>
+</article>
+<article class="card principle-card" id="blueprint-4">
+  <header class="card-head"><div class="card-title"><h3>4 · Gray means gray</h3></div></header>
+  <div class="formula">gray_i = LCh [L_i, 0, 0]   — chroma is zero by construction, on the blue ramp's ladder</div>
+  <div class="scales"><svg viewBox="0 0 354 122" width="354" style="max-width:100%;height:auto" role="img" aria-label="shipped gray-700 · #4e4e4e next to neutral twin · #4e4e4e">
+  <rect x="0" y="0" width="170" height="96" fill="#4e4e4e"><title>shipped gray-700 · #4e4e4e</title></rect>
+  <rect x="184" y="0" width="170" height="96" fill="#4e4e4e"><title>neutral twin · #4e4e4e</title></rect>
+  <text x="85" y="114" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">shipped gray-700 · #4e4e4e</text>
+  <text x="269" y="114" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">neutral twin · #4e4e4e</text>
+</svg></div>
+  <p class="steal-evidence">Chapter 2.2's test, run on ourselves: the worst chroma across all eleven generated grays is 0.0000, so the shipped chip and its rebuilt neutral twin above are literally the same color — the property only Material and Radix ship, and the one every other audited system trades away for a cool tint. You don't earn this gray by tuning; you get it free the moment gray is <em>defined</em> as C = 0 instead of "blue with the chroma turned down."</p>
+</article>
+<article class="card principle-card" id="blueprint-5">
+  <header class="card-head"><div class="card-title"><h3>5 · Steps clear the JND</h3></div></header>
+  <div class="formula">min_i difference(step_i, step_i+1) ≥ 0.025   — every adjacent pair, checked with this page's own gate</div>
+  <div class="scales"><svg viewBox="0 0 354 122" width="354" style="max-width:100%;height:auto" role="img" aria-label="gray 50 · #efefef next to gray 100 · #e2e2e2">
+  <rect x="0" y="0" width="170" height="96" fill="#efefef"><title>gray 50 · #efefef</title></rect>
+  <rect x="184" y="0" width="170" height="96" fill="#e2e2e2"><title>gray 100 · #e2e2e2</title></rect>
+  <text x="85" y="114" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">gray 50 · #efefef</text>
+  <text x="269" y="114" text-anchor="middle" font-size="12" fill="#a8a8b3" font-family="ui-monospace,Menlo,monospace">gray 100 · #e2e2e2</text>
+</svg></div>
+  <p class="steal-evidence">Every adjacent pair in all four generated scales is checked against the same 0.025 near-duplicate threshold the honesty gate uses — asserted at build time. The chips above are our closest pair anywhere, gray 50→100, at 0.046 (1.8× the gate); the closest chromatic pair measures 0.059. Honest context from Chapter 1.3: Material's blue 400→500 hover step measures 0.044 in the same units — our floor is about the same size as theirs. The difference is placement: ours sits at the extreme pale end of the gray ramp, not on the button-hover slot where a state change has to register.</p>
+</article>
+</section>
+<section class="proof " id="not-included">
+  <span class="proof-kicker">5.3 · What the math doesn't buy</span>
+  <h2 class="proof-head">A generator gives you geometry, not judgment.</h2>
+  
+  <div class="proof-visual"></div>
+  <p class="proof-caption">Four things this chapter's math will not hand you. <em>Hand-tuned optical corrections</em> — Material's 2014 palette was adjusted shade by shade by human eyes, and Chapter 4 showed hand-tuning can beat generation on evenness (Primer's red at step CV 16.9% beats every generated ramp here). <em>Brand voice</em> — a generator anchors your seed faithfully; it cannot tell you whether your seed is right, and it inherits your seed's flaws: our green-500 fails white text at 2.28:1, almost exactly like the Tailwind green it resembles (2.22:1), because generation preserves the seed <em>by design</em>. <em>Role semantics</em> — Radix's steps name jobs (backgrounds, states, text; Chapter 4), and no formula assigns your team's meanings to a dial. And <em>the last word in near-neutral ramps</em> — helmlab's own published benchmark keeps honesty tables where OKLab-family spaces score slightly better on near-achromatic steps; if your palette lives close to gray, an OKLab implementation of these same five formulas is a fine choice (<a href="https://helmlab.space/benchmark">helmlab.space/benchmark</a>). The principles are space-portable. That's the point: steal the principles, not necessarily the library.</p>
+  <p class="proof-small">Every number above is computed in this build; the green-500 white-text failure and the step-CV losses are asserted so this section cannot quietly become false. The tool used here is credited in the footer — this chapter's argument doesn't depend on it.</p>
+</section>
+
 <section id="numbers">
   <h2>The numbers, if you want them</h2>
   <table>
@@ -578,7 +728,14 @@ white-text contrast = hl.contrastRatio('#ffffff', token);  PASS ⇔ ≥ 4.5 (WCA
   <h4>8 · The near-duplicate honesty gate — Chapter 1.2</h4>
   <div class="formula">spot-the-boundary / seamless side-by-side visual  ⇒  hl.difference(pair) &lt; 0.025
 otherwise the BUILD FAILS</div>
-  <p>Visual proof patterns are type-checked against the claim they make: a visual that invites you to struggle to see a difference ("spot the boundary") is only honest if the measured difference is genuinely sub-threshold — being a ramp's <em>smallest</em> step does not make a pair perceptually <em>small</em>. Exactly one pair in this audit qualifies: Primer gray 4→5 (trained difference 0.019). The audit's smallest chromatic step, Material blue 400→500, measures 0.044 on a metric that saturates near 0.15 — clearly visible — so the build asserts it is <em>rejected</em> by the gate and shows it only as a receipt-chip pair inside Chapter 1.3.</p>
+  <p>Visual proof patterns are type-checked against the claim they make: a visual that invites you to struggle to see a difference ("spot the boundary") is only honest if the measured difference is genuinely sub-threshold — being a ramp's <em>smallest</em> step does not make a pair perceptually <em>small</em>. Among shipped tokens, exactly one pair qualifies: Primer gray 4→5 (trained difference 0.019). The audit's smallest chromatic step, Material blue 400→500, measures 0.044 on a metric that saturates near 0.15 — clearly visible — so the build asserts it is <em>rejected</em> by the gate and shows it only as a receipt-chip pair inside Chapter 1.3. One other visual passes the gate: Chapter 5's hue-lock receipt (0.0121), a <em>constructed</em> equal-L/C pair rather than a shipped ramp step — and the generated red's pair (0.0297) sits just above the threshold, so it is denied the seamless treatment, which is the gate doing its job on our own palette too.</p>
+
+  <h4>9 · The generated reference palette — Chapter 5</h4>
+  <div class="formula">scales   = hl.semanticScale(seed)  for #3b82f6 / #ef4444 / #22c55e   (seed preserved at step 500 — asserted)
+gray_i   = genFromLch([L_i, 0, 0])  over the blue ramp's measured L ladder (matching ladders by construction)
+audit    = a 1:1 replica of this scorecard's pipeline, parity-checked against all 24 audited scales
+maxC(L,h) = the chroma that survives genFromLch([L, 0.6, h]) → sRGB → back  (helmlab clips C, holds L and h)</div>
+  <p>Chapter 5's column is only meaningful if it comes from the same math as the other six, so the build re-derives every scorecard scale with the replica pipeline and fails on any disagreement. Both the wins (hue lock &lt; 3° and at least 4× tighter than the best audited system, ink-true gray, zero reversals, every adjacent step over the 0.025 JND gate, the chroma law within 0.025 on all three ramps) and the <em>losses</em> (4th of 7 on mean step CV behind Chakra, Primer and Bootstrap; 3rd on mean L-CV behind Bootstrap and Chakra; a 8.0× max/min cliff inside the generated blue; green-500 failing white text) are asserted — if a future helmlab version fixes a disclosed loss, the build fails until the text is updated, so the honesty cannot go stale in either direction.</p>
 
   <h4>Provenance &amp; limitations</h4>
   <ul>
