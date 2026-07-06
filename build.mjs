@@ -134,6 +134,25 @@ const ALL_D = Object.entries(scorecard.systems).flatMap(([k, s]) =>
 if (Math.abs(Math.max(...ALL_D) - F.radixRedCliff) > 1e-9)
   throw new Error("Fact check failed: Radix red 11→12 is no longer the largest step in the audit.");
 
+// sanity: the "smallest chromatic step in the audit" claim (Finding 01).
+// Chromatic = every scale except gray; the claim is relative, not "invisible".
+const CHROMATIC_D = Object.values(scorecard.systems).flatMap((s) =>
+  Object.entries(s.scales).filter(([name]) => name !== "gray").flatMap(([, sc]) => sc.step_distances));
+if (Math.abs(Math.min(...CHROMATIC_D) - F.matBlueDup) > 1e-9)
+  throw new Error("Fact check failed: Material blue 400→500 is no longer the smallest chromatic step in the audit.");
+
+// Scale context for the near-duplicate captions, computed live via helmlab:
+// the trained perceptual metric (saturates near ~0.15 for very dissimilar
+// pairs) and plain Metric-Lab Euclidean distance, each anchored to black↔white.
+const CTX = {
+  bwDiff: hl.difference("#000000", "#ffffff"),            // ~0.149 (metric saturation)
+  bwEuclid: hl.euclideanDistance("#000000", "#ffffff"),   // ~1.12
+  matPairDiff: hl.difference(F.matBlue400, F.matBlue500), // ~0.044
+  matPairEuclid: hl.euclideanDistance(F.matBlue400, F.matBlue500), // ~0.026
+  twPairDiff: hl.difference(hexOf("tailwind", "blue", "500"), hexOf("tailwind", "blue", "600")), // ~0.072
+  primerGrayPairDiff: hl.difference(hexOf("primer", "gray", "4"), hexOf("primer", "gray", "5")), // ~0.019
+};
+
 const TOTAL_STEPS = ALL_D.length;
 
 // ---------------------------------------------------------------------------
@@ -278,13 +297,13 @@ const proofBlocks = [
   proofBlock({
     id: "one-color",
     kicker: "Finding 01 · Material Design",
-    headline: "Two tokens. Basically one color.",
-    deck: `Material's <code>blue-400</code> and <code>blue-500</code> are officially two different design tokens. To the eye, they're almost the same paint.`,
+    headline: "The smallest step in the audit — right where feedback matters most.",
+    deck: `Material's <code>blue-400</code> and <code>blue-500</code> are officially two different design tokens — in countless UIs, a button and its hover state. No two chromatic tokens we measured sit closer together.`,
     visual: `${bigPairSVG(F.matBlue400, F.matBlue500, `blue 400 · ${F.matBlue400}`, `blue 500 · ${F.matBlue500}`, 0)}
-      <p class="strip-lede">Spot the boundary. Somewhere in this strip, 400 becomes 500.</p>
+      <p class="strip-lede">Somewhere in this strip, 400 becomes 500. You can find the seam — the point is how little separates them.</p>
       <div class="bleed">${boundaryStripSVG(F.matBlue400, F.matBlue500, `Material blue 400 (${F.matBlue400}) meets blue 500 (${F.matBlue500}) at the midpoint of this strip`)}</div>`,
-    caption: `Material blue 400 vs 500 — this is your button and its hover state. If your hover feedback, your selected-vs-unselected tab, or your chart series relies on this pair, most people will never see the difference. Meanwhile the jump from 50 to 100, in the same ramp, is ${rx(ratio(F.matBlueBig, F.matBlueDup))} bigger.`,
-    small: `Perceptual distance 400→500 = ${fmt(F.matBlueDup, 3)} (helmlab GenSpace) — the smallest chromatic step measured in this audit. 50→100 = ${fmt(F.matBlueBig, 3)}.`,
+    caption: `Side by side you can spot the seam. But hover states don't happen side by side — the button changes <em>in place</em>, and an in-place change this small is far easier to miss than these adjacent fields suggest. That's the finding: 400→500 is the audit's smallest chromatic step, ${rx(ratio(F.matBlueBig, F.matBlueDup))} smaller than the 50→100 jump in the same ramp — the ramp spends its least contrast exactly where state feedback usually lives.`,
+    small: `Perceptual distance 400→500 = ${fmt(F.matBlueDup, 3)} (helmlab GenSpace) — the smallest chromatic step measured in this audit (asserted at build time); 50→100 = ${fmt(F.matBlueBig, 3)}. For scale: helmlab's trained difference metric rates the pair ${fmt(CTX.matPairDiff, 3)} on a scale that saturates near ${fmt(CTX.bwDiff, 2)} (black↔white); plain Metric-Lab distance ${fmt(CTX.matPairEuclid, 3)} vs ${fmt(CTX.bwEuclid, 2)} for black↔white. Small, not invisible.`,
   }),
 
   // 2 — uneven steps --------------------------------------------------------
@@ -294,7 +313,7 @@ const proofBlocks = [
     headline: "One step whispers, another shouts.",
     deck: `Below, each gap is drawn exactly as wide as the measured perceptual distance between neighbors. Even scale, even gaps. This is Bootstrap's blue.`,
     visual: gapRowSVG("Bootstrap blue", hexes("bootstrap", "blue"), names("bootstrap", "blue"), dists("bootstrap", "blue"), { annotate: bsAnnotate }),
-    caption: `The 100→200 jump is ${rx(ratio(F.bsBlueBig, F.bsBlueSmall))} the 400→500 jump — Bootstrap blue. The token names promise a staircase with even steps; what ships is one cliff at the light end and three near-flat steps in the middle. A "one shade darker" tweak means almost nothing at 400 and a completely different color at 100.`,
+    caption: `The 100→200 jump is ${rx(ratio(F.bsBlueBig, F.bsBlueSmall))} the 400→500 jump — Bootstrap blue. The token names promise a staircase with even steps; what ships is one cliff at the light end and three whisper-small steps in the middle. The same "one shade darker" tweak buys ${rx(ratio(F.bsBlueBig, F.bsBlueSmall))} more visible change at 100 than at 400.`,
     small: `100→200 = ${fmt(F.bsBlueBig, 3)}, 400→500 = ${fmt(F.bsBlueSmall, 3)} in GenSpace. Bootstrap tints and shades by mixing RGB with white/black — equal paint-mixing is not equal seeing.`,
   }),
 
@@ -319,8 +338,8 @@ const proofBlocks = [
     deck: `In countless Tailwind codebases, <code>blue-500</code> is the button and <code>blue-600</code> is its hover. They are the closest pair in the entire ramp.`,
     visual: `${bigPairSVG(F.twBlue500, F.twBlue600, `blue 500 · ${F.twBlue500}`, `blue 600 · ${F.twBlue600}`, 0, 180)}
       ${gapRowSVG("Tailwind blue", hexes("tailwind", "blue"), names("tailwind", "blue"), dists("tailwind", "blue"), { annotate: twAnnotate })}`,
-    caption: `The 200→300 jump is ${rx(ratio(F.twBlueBig, F.twBlueDup))} the 500→600 jump. A subtle hover is a legitimate design choice — just know the ramp made that choice for you, and users with low-end screens or mild color vision deficiency may not get any hover feedback at all. Red has the same squeeze, plus one huge cliff into 950.`,
-    small: `500→600 = ${fmt(F.twBlueDup, 3)}, 200→300 = ${fmt(F.twBlueBig, 3)}. Tailwind red 900→950 = ${fmt(dist("tailwind", "red", "900"), 3)}, the ramp's biggest jump.`,
+    caption: `Butted together like this, the 500/600 seam is plain to see. But a hover doesn't happen side by side — the button changes in place, and the ramp's smallest step is the easiest one to miss in place, more so on low-end screens or with mild color vision deficiency. The 200→300 jump is ${rx(ratio(F.twBlueBig, F.twBlueDup))} the 500→600 jump: a subtle hover is a legitimate design choice — just know the ramp made that choice for you. Red has the same squeeze, plus one huge cliff into 950.`,
+    small: `500→600 = ${fmt(F.twBlueDup, 3)}, 200→300 = ${fmt(F.twBlueBig, 3)} in GenSpace; trained-metric difference for 500/600 = ${fmt(CTX.twPairDiff, 3)} (scale saturates near ${fmt(CTX.bwDiff, 2)}). Tailwind red 900→950 = ${fmt(dist("tailwind", "red", "900"), 3)}, the ramp's biggest jump.`,
   }),
 
   // 5 — glued neutral -------------------------------------------------------
@@ -328,23 +347,25 @@ const proofBlocks = [
     id: "glued-gray",
     kicker: "Finding 05 · GitHub Primer",
     headline: "One gray scale. Except it's two.",
-    deck: `Primer's 14-step neutral behaves like two scales glued together: seven near-identical light grays, a cliff, then a normal dark ramp.`,
-    visual: gapRowSVG("Primer neutral", hexes("primer", "gray"), names("primer", "gray"), dists("primer", "gray"), { annotate: pgAnnotate }),
-    caption: `Pick "the next gray down" near the top and nothing visibly changes; do it at the 7→8 seam and everything does. That jump is ${rx(ratio(F.primerGrayBig, F.primerGraySmall))} the 4→5 jump. This isn't necessarily wrong — light-mode UIs need many whisper-quiet surface grays — but if you're choosing border and divider colors by nudging the step number, this ramp will not behave linearly.`,
-    small: `4→5 = ${fmt(F.primerGraySmall, 3)}, 7→8 = ${fmt(F.primerGrayBig, 3)} in GenSpace. The gaps above are the measured distances, to scale.`,
+    deck: `Primer's 14-step neutral behaves like two scales glued together: seven whisper-quiet light grays, a cliff, then a normal dark ramp.`,
+    visual: `${gapRowSVG("Primer neutral", hexes("primer", "gray"), names("primer", "gray"), dists("primer", "gray"), { annotate: pgAnnotate })}
+      <p class="strip-lede">Spot the boundary: gray 4 meets gray 5 at the midpoint of this strip — the ramp's closest pair. Most people will need a second look.</p>
+      <div class="bleed">${boundaryStripSVG(hexOf("primer", "gray", "4"), hexOf("primer", "gray", "5"), `Primer gray 4 (${hexOf("primer", "gray", "4")}) meets gray 5 (${hexOf("primer", "gray", "5")}) at the midpoint of this strip`)}</div>`,
+    caption: `Pick "the next gray down" near the top and the change is nearly too small to point at — the strip above is a real 4→5 boundary, ${(ratio(F.matBlueDup, F.primerGraySmall)).toFixed(1)}× closer than Material's blue pair. Do it at the 7→8 seam and everything changes: that jump is ${rx(ratio(F.primerGrayBig, F.primerGraySmall))} the 4→5 jump. This isn't necessarily wrong — light-mode UIs need many whisper-quiet surface grays — but if you're choosing border and divider colors by nudging the step number, this ramp will not behave linearly.`,
+    small: `4→5 = ${fmt(F.primerGraySmall, 3)} (${hexOf("primer", "gray", "4")} vs ${hexOf("primer", "gray", "5")}; trained-metric difference ${fmt(CTX.primerGrayPairDiff, 3)}), 7→8 = ${fmt(F.primerGrayBig, 3)} in GenSpace. The gaps above are the measured distances, to scale.`,
   }),
 
   // 6 — L skeleton ----------------------------------------------------------
   proofBlock({
     id: "darkness-skeleton",
     kicker: "Finding 06 · Material Design",
-    headline: "It stops getting darker halfway down.",
+    headline: "Halfway down, it nearly stops getting darker.",
     deck: `Strip the color away and render each token of Material's red as neutral gray at its <em>measured</em> lightness — the ramp's darkness skeleton. Top row: what ships. Bottom row: how dark each step actually is.`,
     visual: `<div class="stacked-strips">
       ${colorStripSVG("Material red (as shipped)", hexes("material", "red"), names("material", "red"), 56)}
       ${colorStripSVG("Material red (lightness skeleton — each step as neutral gray at its measured L)", graySkeleton("material", "red"), names("material", "red"), 56)}
     </div>`,
-    caption: `Same step, different darkness jump. Material red darkens fast, then almost stalls: from 500 to 900 the skeleton barely moves. White text that passes on red-600 will behave almost identically on red-800 — and if your error-state hierarchy expects "darker = more severe," the bottom half of this ramp isn't delivering it.`,
+    caption: `Same step, different darkness jump. Material red darkens fast, then slows sharply: the four steps from 500 down to 900 cover less than half the lightness distance of the five from 50 down to 500. White text that passes on red-600 will behave very similarly on red-800 — and if your error-state hierarchy expects "darker = more severe," the bottom half of this ramp delivers it at less than half the rate of the top.`,
     small: `Measured GenSpace L: 500 = ${F.matRedL[5].toFixed(2)}, 700 = ${F.matRedL[7].toFixed(2)}, 900 = ${F.matRedL[9].toFixed(2)}. Lightness-step consistency (L-CV) ${F.matRedLcv.toFixed(1)}% — the most uneven chromatic darkness ladder in the audit. Grays rendered via helmlab genFromLch([L, 0, 0]).`,
   }),
 
@@ -353,11 +374,11 @@ const proofBlocks = [
     id: "stays-blue",
     kicker: "Finding 07 · Credit where due",
     headline: "Tailwind's blue never stops being blue.",
-    deck: `Same test we ran on Primer: first-step hue vs worst-drift hue, re-rendered at identical lightness and colorfulness. Try to tell them apart.`,
+    deck: `Same test we ran on Primer: first-step hue vs worst-drift hue, re-rendered at identical lightness and colorfulness. Compare how far apart these read to Finding 03.`,
     visual: bigPairSVG(F.twBlueProof.hexA, F.twBlueProof.hexB,
       `the hue you started with · step ${F.twBlueProof.firstStep}`,
       `the hue you ended with · step ${F.twBlueProof.driftStep}`, 8),
-    caption: `That's ${F.twBlueProof.drift.toFixed(1)}° of drift across eleven steps — you can barely see it, and that's the point. This is Tailwind's v4 move to designing ramps in a perceptual color space paying off: dark blue is still the same blue, so tinted dark surfaces, focus rings and charts stay on-brand at every step.`,
+    caption: `That's ${F.twBlueProof.drift.toFixed(1)}° of drift across eleven steps — you can see it when the two fields face each other like this, but it's roughly a third of Primer's ${F.primerBlueProof.drift.toFixed(1)}°. This is Tailwind's v4 move to designing ramps in a perceptual color space paying off: dark blue is still recognizably the same blue, so tinted dark surfaces, focus rings and charts stay on-brand at every step.`,
     small: `Hues ${F.twBlueProof.h1.toFixed(1)}° and ${F.twBlueProof.h2.toFixed(1)}° from Tailwind blue ${F.twBlueProof.firstStep} and ${F.twBlueProof.driftStep}, rendered at GenSpace L=${F.twBlueProof.L}, C=${F.twBlueProof.C} → ${F.twBlueProof.hexA} vs ${F.twBlueProof.hexB}. Tailwind gray drifts just ${scorecard.systems.tailwind.scales.gray.hue_drift_deg.toFixed(1)}°.`,
     tone: "praise",
   }),
@@ -409,7 +430,7 @@ const CARDS = {
     notes: [
       { say: "Nothing here will surprise you badly. Red, green and blue all darken at a believable, steady pace — the most consistent trio of color ramps in the audit.", num: "chromatic L-CV 18.2–19.0%, step CV 26.0–43.1%" },
       { say: "The dark blues stop being the blue you started with — 900 leans indigo. The darkest gray leans blue too: a deliberate cool-gray choice, but the strongest tint of any gray measured.", num: "blue hue drift 20.5° at 900; gray 19.1° at 900" },
-      { say: "Light grays crowd together — 100 and 200 are nearly the same surface — then the mid-scale jumps get big.", num: "gray 100→200 d = 0.020 vs 500→600 d = 0.227 (11.2×)" },
+      { say: "Light grays crowd together — the 100→200 step is a tenth of the mid-scale jumps that follow.", num: "gray 100→200 d = 0.020 vs 500→600 d = 0.227 (11.2×)" },
     ],
   },
   primer: {
@@ -429,17 +450,17 @@ const CARDS = {
     ],
   },
   tailwind: {
-    verdict: "The truest hues in the audit — but 500 and 600 sit almost on top of each other.",
+    verdict: "The truest hues in the audit — but 500 and 600 are the ramp's closest pair.",
     notes: [
       { say: "Blues stay blue, grays stay gray, and even the worst scale barely wanders — the v4 redesign in a perceptual color space shows (Finding 07).", num: "hue drift: blue 9.6°, gray 6.9°, worst (red) 13.2°" },
       { say: "The default button-and-hover pair is the closest pair in the ramp (Finding 04); red has the same squeeze plus a cliff into 950.", num: "blue 500→600 d = 0.045 vs 200→300 d = 0.219 (4.9×); red 900→950 d = 0.318" },
-      { say: "The lightest grays are nearly indistinguishable, and the mid shades are tuned dark-UI-first: green-500 is strong on black, weak on white.", num: "gray 50→100 d = 0.009 vs 400→500 d = 0.203 (22.1×); green-500 9.47:1 black / 2.22:1 white" },
+      { say: "The lightest grays sit a hair apart — most people will need a second look — and the mid shades are tuned dark-UI-first: green-500 is strong on black, weak on white.", num: "gray 50→100 d = 0.009 vs 400→500 d = 0.203 (22.1×); green-500 9.47:1 black / 2.22:1 white" },
     ],
   },
   material: {
-    verdict: "A 2014 palette showing its age — twin blues in the middle, a red that stops darkening.",
+    verdict: "A 2014 palette showing its age — the audit's smallest step mid-blue, a red that stops darkening.",
     notes: [
-      { say: "Blue 400 and 500 are near-duplicates (Finding 01) while 50→100 is a huge leap — the least even color ramp we measured.", num: "400→500 d = 0.026 vs 50→100 d = 0.162 (6.2×); step CV 68.9%" },
+      { say: "Blue 400→500 is the smallest chromatic step in the audit (Finding 01) while 50→100 is a huge leap — the least even color ramp we measured.", num: "400→500 d = 0.026 vs 50→100 d = 0.162 (6.2×); step CV 68.9%" },
       { say: "Red barely darkens through its bottom half (Finding 06) and drifts hue on the way down.", num: "red L-CV 65.5% (most uneven measured); hue drift 20.8°" },
       { say: "Credit where due: green is clean, and the gray is perfectly neutral — not a hint of tint at any of its ten steps.", num: "green step CV 31.8%, drift 3.6°; gray fully achromatic in GenSpace" },
     ],
