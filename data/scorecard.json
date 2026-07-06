@@ -1,0 +1,1257 @@
+{
+  "generated": "2026-07-06",
+  "tool": "helmlab (GenSpace)",
+  "achromatic_threshold_C": 0.03,
+  "systems": {
+    "tailwind": {
+      "system": "Tailwind CSS v4",
+      "source": "tailwindcss@4.3.2 theme.css",
+      "note": "published as oklch(); converted to sRGB hex via culori (clamped)",
+      "scales": {
+        "blue": {
+          "n": 11,
+          "L": [
+            0.9679,
+            0.9247,
+            0.8658,
+            0.7753,
+            0.6535,
+            0.5538,
+            0.4712,
+            0.4052,
+            0.3338,
+            0.2833,
+            0.1694
+          ],
+          "L_cv_pct": 31.55,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0671,
+            0.1205,
+            0.2194,
+            0.053,
+            0.0476,
+            0.0451,
+            0.0567,
+            0.1008,
+            0.1022,
+            0.1818
+          ],
+          "step_cv_pct": 57.17,
+          "step_max_min_ratio": 4.87,
+          "largest_step": "200->300 (d=0.2194)",
+          "smallest_step": "500->600 (d=0.0451)",
+          "hue_drift_deg": 9.63,
+          "hue_drift_at_step": "950",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#2b7fff",
+            "contrast_vs_white": 3.76,
+            "contrast_vs_black": 5.58,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 11,
+          "L": [
+            0.9679,
+            0.9298,
+            0.8673,
+            0.7728,
+            0.6506,
+            0.5745,
+            0.5115,
+            0.4291,
+            0.3549,
+            0.3021,
+            0.1406
+          ],
+          "L_cv_pct": 41.35,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0976,
+            0.1216,
+            0.1742,
+            0.2231,
+            0.1548,
+            0.0843,
+            0.1064,
+            0.1312,
+            0.155,
+            0.3175
+          ],
+          "step_cv_pct": 42.24,
+          "step_max_min_ratio": 3.77,
+          "largest_step": "900->950 (d=0.3175)",
+          "smallest_step": "500->600 (d=0.0843)",
+          "hue_drift_deg": 13.15,
+          "hue_drift_at_step": "700",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#fb2c36",
+            "contrast_vs_white": 3.81,
+            "contrast_vs_black": 5.52,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 11,
+          "L": [
+            0.9803,
+            0.959,
+            0.9174,
+            0.8514,
+            0.7561,
+            0.6819,
+            0.568,
+            0.4515,
+            0.3574,
+            0.2985,
+            0.1504
+          ],
+          "L_cv_pct": 43.56,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1068,
+            0.1303,
+            0.1798,
+            0.2186,
+            0.1229,
+            0.1276,
+            0.1624,
+            0.1383,
+            0.0867,
+            0.1675
+          ],
+          "step_cv_pct": 25.35,
+          "step_max_min_ratio": 2.52,
+          "largest_step": "300->400 (d=0.2186)",
+          "smallest_step": "800->900 (d=0.0867)",
+          "hue_drift_deg": 10.03,
+          "hue_drift_at_step": "600",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#00c950",
+            "contrast_vs_white": 2.22,
+            "contrast_vs_black": 9.47,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 11,
+          "L": [
+            0.9833,
+            0.964,
+            0.9196,
+            0.8534,
+            0.6567,
+            0.4751,
+            0.3569,
+            0.2753,
+            0.1661,
+            0.0838,
+            0.0193
+          ],
+          "L_cv_pct": 55.84,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0092,
+            0.0258,
+            0.042,
+            0.1522,
+            0.2032,
+            0.1719,
+            0.1188,
+            0.148,
+            0.0946,
+            0.1037
+          ],
+          "step_cv_pct": 57.56,
+          "step_max_min_ratio": 22.09,
+          "largest_step": "400->500 (d=0.2032)",
+          "smallest_step": "50->100 (d=0.0092)",
+          "hue_drift_deg": 6.92,
+          "hue_drift_at_step": "800",
+          "achromatic_steps_skipped": [
+            "50",
+            "100",
+            "200",
+            "300"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#6a7282",
+            "contrast_vs_white": 4.84,
+            "contrast_vs_black": 4.34,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 43.08,
+        "mean_step_cv_pct": 45.58,
+        "worst_hue_drift_deg": 13.15,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    },
+    "primer": {
+      "system": "GitHub Primer",
+      "source": "@primer/primitives@11.9.0 figma/scales/light.json",
+      "note": "light-mode base scales; gray = neutral (steps 0..13, others 0..9)",
+      "scales": {
+        "blue": {
+          "n": 10,
+          "L": [
+            0.9495,
+            0.8797,
+            0.7847,
+            0.6852,
+            0.58,
+            0.4636,
+            0.3625,
+            0.2826,
+            0.2159,
+            0.1485
+          ],
+          "L_cv_pct": 19.52,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1544,
+            0.1245,
+            0.0519,
+            0.0532,
+            0.0909,
+            0.1111,
+            0.1059,
+            0.1115,
+            0.0827
+          ],
+          "step_cv_pct": 31.62,
+          "step_max_min_ratio": 2.98,
+          "largest_step": "0->1 (d=0.1544)",
+          "smallest_step": "2->3 (d=0.0519)",
+          "hue_drift_deg": 27.6,
+          "hue_drift_at_step": "8",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "5",
+            "hex": "#0969da",
+            "contrast_vs_white": 5.19,
+            "contrast_vs_black": 4.04,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 10,
+          "L": [
+            0.9515,
+            0.8791,
+            0.7928,
+            0.7024,
+            0.5962,
+            0.4757,
+            0.3706,
+            0.291,
+            0.2179,
+            0.1496
+          ],
+          "L_cv_pct": 19.08,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1493,
+            0.1649,
+            0.166,
+            0.1925,
+            0.1068,
+            0.1328,
+            0.131,
+            0.1228,
+            0.142
+          ],
+          "step_cv_pct": 16.87,
+          "step_max_min_ratio": 1.8,
+          "largest_step": "3->4 (d=0.1925)",
+          "smallest_step": "4->5 (d=0.1068)",
+          "hue_drift_deg": 11.18,
+          "hue_drift_at_step": "9",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "5",
+            "hex": "#cf222e",
+            "contrast_vs_white": 5.36,
+            "contrast_vs_black": 3.92,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 10,
+          "L": [
+            0.9536,
+            0.8772,
+            0.7808,
+            0.6783,
+            0.5707,
+            0.4458,
+            0.349,
+            0.2763,
+            0.2078,
+            0.1439
+          ],
+          "L_cv_pct": 21.59,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.166,
+            0.2065,
+            0.128,
+            0.1247,
+            0.1541,
+            0.1281,
+            0.093,
+            0.0837,
+            0.0739
+          ],
+          "step_cv_pct": 31.09,
+          "step_max_min_ratio": 2.79,
+          "largest_step": "1->2 (d=0.2065)",
+          "smallest_step": "8->9 (d=0.0739)",
+          "hue_drift_deg": 3.83,
+          "hue_drift_at_step": "5",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "5",
+            "hex": "#1a7f37",
+            "contrast_vs_white": 5.08,
+            "contrast_vs_black": 4.13,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 14,
+          "L": [
+            1,
+            0.9762,
+            0.9561,
+            0.9287,
+            0.9129,
+            0.8925,
+            0.8647,
+            0.8345,
+            0.5693,
+            0.4126,
+            0.3211,
+            0.2658,
+            0.1668,
+            0.1369
+          ],
+          "L_cv_pct": 105.51,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0206,
+            0.0144,
+            0.0171,
+            0.0204,
+            0.0111,
+            0.0265,
+            0.0198,
+            0.206,
+            0.1886,
+            0.1299,
+            0.0802,
+            0.1397,
+            0.0391
+          ],
+          "step_cv_pct": 97.25,
+          "step_max_min_ratio": 18.58,
+          "largest_step": "7->8 (d=0.2060)",
+          "smallest_step": "4->5 (d=0.0111)",
+          "hue_drift_deg": 5.73,
+          "hue_drift_at_step": "9",
+          "achromatic_steps_skipped": [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "10",
+            "11",
+            "12",
+            "13"
+          ],
+          "mid": {
+            "step": "7",
+            "hex": "#c8d1da",
+            "contrast_vs_white": 1.55,
+            "contrast_vs_black": 13.59,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 41.42,
+        "mean_step_cv_pct": 44.21,
+        "worst_hue_drift_deg": 27.6,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    },
+    "material": {
+      "system": "Material Design (2014 palette)",
+      "source": "material-colors@1.2.6 (mirror of 2014 spec palette)",
+      "note": "accent (aN00) steps excluded; gray = grey",
+      "scales": {
+        "blue": {
+          "n": 10,
+          "L": [
+            0.9491,
+            0.8692,
+            0.7864,
+            0.7051,
+            0.6489,
+            0.5987,
+            0.5526,
+            0.4909,
+            0.4343,
+            0.3309
+          ],
+          "L_cv_pct": 26.09,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1621,
+            0.1532,
+            0.0374,
+            0.0284,
+            0.0263,
+            0.0392,
+            0.0529,
+            0.0529,
+            0.1034
+          ],
+          "step_cv_pct": 68.9,
+          "step_max_min_ratio": 6.16,
+          "largest_step": "50->100 (d=0.1621)",
+          "smallest_step": "400->500 (d=0.0263)",
+          "hue_drift_deg": 17.73,
+          "hue_drift_at_step": "900",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#2196f3",
+            "contrast_vs_white": 3.12,
+            "contrast_vs_black": 6.72,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 10,
+          "L": [
+            0.953,
+            0.8792,
+            0.7324,
+            0.6331,
+            0.593,
+            0.5801,
+            0.5408,
+            0.4941,
+            0.4612,
+            0.42
+          ],
+          "L_cv_pct": 65.53,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1409,
+            0.2032,
+            0.1398,
+            0.1515,
+            0.1038,
+            0.0576,
+            0.05,
+            0.0351,
+            0.0439
+          ],
+          "step_cv_pct": 54.38,
+          "step_max_min_ratio": 5.79,
+          "largest_step": "100->200 (d=0.2032)",
+          "smallest_step": "700->800 (d=0.0351)",
+          "hue_drift_deg": 20.84,
+          "hue_drift_at_step": "500",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#f44336",
+            "contrast_vs_white": 3.68,
+            "contrast_vs_black": 5.7,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 10,
+          "L": [
+            0.9533,
+            0.8817,
+            0.8016,
+            0.7258,
+            0.6699,
+            0.6159,
+            0.5647,
+            0.5027,
+            0.4447,
+            0.3342
+          ],
+          "L_cv_pct": 25.55,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1397,
+            0.1466,
+            0.161,
+            0.1164,
+            0.1043,
+            0.0562,
+            0.0724,
+            0.0729,
+            0.1408
+          ],
+          "step_cv_pct": 31.82,
+          "step_max_min_ratio": 2.86,
+          "largest_step": "200->300 (d=0.1610)",
+          "smallest_step": "500->600 (d=0.0562)",
+          "hue_drift_deg": 3.61,
+          "hue_drift_at_step": "800",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#4caf50",
+            "contrast_vs_white": 2.78,
+            "contrast_vs_black": 7.56,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 10,
+          "L": [
+            0.9838,
+            0.9675,
+            0.9444,
+            0.8955,
+            0.7646,
+            0.6473,
+            0.4879,
+            0.4097,
+            0.2822,
+            0.129
+          ],
+          "L_cv_pct": 54.54,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0092,
+            0.0133,
+            0.0281,
+            0.0826,
+            0.0918,
+            0.1554,
+            0.0942,
+            0.1741,
+            0.21
+          ],
+          "step_cv_pct": 71.43,
+          "step_max_min_ratio": 22.71,
+          "largest_step": "800->900 (d=0.2100)",
+          "smallest_step": "50->100 (d=0.0092)",
+          "hue_drift_deg": null,
+          "hue_drift_at_step": null,
+          "achromatic_steps_skipped": [
+            "50",
+            "100",
+            "200",
+            "300",
+            "400",
+            "500",
+            "600",
+            "700",
+            "800",
+            "900"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#9e9e9e",
+            "contrast_vs_white": 2.68,
+            "contrast_vs_black": 7.84,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 42.93,
+        "mean_step_cv_pct": 56.63,
+        "worst_hue_drift_deg": 20.84,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    },
+    "bootstrap": {
+      "system": "Bootstrap 5",
+      "source": "bootstrap@5.3.8 scss/_variables.scss",
+      "note": "blue/red/green ramps generated per Bootstrap definition: tint-color/shade-color = sass mix() with white/black; gray-* are hex literals",
+      "scales": {
+        "blue": {
+          "n": 9,
+          "L": [
+            0.8968,
+            0.786,
+            0.6823,
+            0.586,
+            0.5071,
+            0.4094,
+            0.3092,
+            0.1992,
+            0.0772
+          ],
+          "L_cv_pct": 11.6,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.3029,
+            0.0423,
+            0.0394,
+            0.038,
+            0.1058,
+            0.1319,
+            0.1674,
+            0.1901
+          ],
+          "step_cv_pct": 67.95,
+          "step_max_min_ratio": 7.97,
+          "largest_step": "100->200 (d=0.3029)",
+          "smallest_step": "400->500 (d=0.0380)",
+          "hue_drift_deg": 2.94,
+          "hue_drift_at_step": "900",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#0d6efd",
+            "contrast_vs_white": 4.5,
+            "contrast_vs_black": 4.67,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 9,
+          "L": [
+            0.8963,
+            0.7851,
+            0.6832,
+            0.5911,
+            0.5215,
+            0.4209,
+            0.3174,
+            0.2048,
+            0.0804
+          ],
+          "L_cv_pct": 14.9,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1777,
+            0.1444,
+            0.1266,
+            0.1287,
+            0.1289,
+            0.1691,
+            0.2195,
+            0.2702
+          ],
+          "step_cv_pct": 28.17,
+          "step_max_min_ratio": 2.13,
+          "largest_step": "800->900 (d=0.2702)",
+          "smallest_step": "300->400 (d=0.1266)",
+          "hue_drift_deg": 11.85,
+          "hue_drift_at_step": "500",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#dc3545",
+            "contrast_vs_white": 4.53,
+            "contrast_vs_black": 4.64,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 9,
+          "L": [
+            0.898,
+            0.7875,
+            0.679,
+            0.5739,
+            0.4762,
+            0.3844,
+            0.2904,
+            0.1879,
+            0.0723
+          ],
+          "L_cv_pct": 7.54,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1587,
+            0.1599,
+            0.1543,
+            0.1408,
+            0.1181,
+            0.1193,
+            0.1159,
+            0.1088
+          ],
+          "step_cv_pct": 14.81,
+          "step_max_min_ratio": 1.47,
+          "largest_step": "200->300 (d=0.1599)",
+          "smallest_step": "800->900 (d=0.1088)",
+          "hue_drift_deg": 11.11,
+          "hue_drift_at_step": "500",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#198754",
+            "contrast_vs_white": 4.53,
+            "contrast_vs_black": 4.63,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 9,
+          "L": [
+            0.98,
+            0.9358,
+            0.9003,
+            0.8474,
+            0.7298,
+            0.4823,
+            0.3367,
+            0.2433,
+            0.1465
+          ],
+          "L_cv_pct": 62.15,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0308,
+            0.0225,
+            0.036,
+            0.0818,
+            0.2306,
+            0.1895,
+            0.1361,
+            0.1329
+          ],
+          "step_cv_pct": 67.56,
+          "step_max_min_ratio": 10.25,
+          "largest_step": "500->600 (d=0.2306)",
+          "smallest_step": "200->300 (d=0.0225)",
+          "hue_drift_deg": null,
+          "hue_drift_at_step": null,
+          "achromatic_steps_skipped": [
+            "100",
+            "200",
+            "300",
+            "400",
+            "500",
+            "600",
+            "700",
+            "800",
+            "900"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#adb5bd",
+            "contrast_vs_white": 2.07,
+            "contrast_vs_black": 10.12,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 24.05,
+        "mean_step_cv_pct": 44.62,
+        "worst_hue_drift_deg": 11.85,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    },
+    "radix": {
+      "system": "Radix Colors",
+      "source": "@radix-ui/colors@3.0.0 (light scales)",
+      "note": "steps 1..12; step 9 is the \"solid\" step (mid equivalent)",
+      "scales": {
+        "blue": {
+          "n": 12,
+          "L": [
+            0.9925,
+            0.9804,
+            0.9561,
+            0.9318,
+            0.8937,
+            0.8429,
+            0.7785,
+            0.688,
+            0.5885,
+            0.5577,
+            0.4809,
+            0.2192
+          ],
+          "L_cv_pct": 94.49,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0278,
+            0.0571,
+            0.0806,
+            0.0754,
+            0.0952,
+            0.0795,
+            0.042,
+            0.0526,
+            0.0291,
+            0.0763,
+            0.3283
+          ],
+          "step_cv_pct": 92.7,
+          "step_max_min_ratio": 11.8,
+          "largest_step": "11->12 (d=0.3283)",
+          "smallest_step": "1->2 (d=0.0278)",
+          "hue_drift_deg": 17.19,
+          "hue_drift_at_step": "12",
+          "achromatic_steps_skipped": [
+            "1",
+            "2"
+          ],
+          "mid": {
+            "step": "9",
+            "hex": "#0090ff",
+            "contrast_vs_white": 3.26,
+            "contrast_vs_black": 6.43,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 12,
+          "L": [
+            0.9928,
+            0.9807,
+            0.9515,
+            0.9128,
+            0.8778,
+            0.8349,
+            0.7748,
+            0.7001,
+            0.5606,
+            0.5301,
+            0.4815,
+            0.2361
+          ],
+          "L_cv_pct": 93.68,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0308,
+            0.0686,
+            0.0884,
+            0.068,
+            0.0721,
+            0.0785,
+            0.1001,
+            0.2418,
+            0.0322,
+            0.0489,
+            0.4349
+          ],
+          "step_cv_pct": 99.96,
+          "step_max_min_ratio": 14.12,
+          "largest_step": "11->12 (d=0.4349)",
+          "smallest_step": "1->2 (d=0.0308)",
+          "hue_drift_deg": 11.19,
+          "hue_drift_at_step": "11",
+          "achromatic_steps_skipped": [
+            "1",
+            "2",
+            "3"
+          ],
+          "mid": {
+            "step": "9",
+            "hex": "#e5484d",
+            "contrast_vs_white": 3.91,
+            "contrast_vs_black": 5.37,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 12,
+          "L": [
+            0.9937,
+            0.9798,
+            0.9545,
+            0.9264,
+            0.8861,
+            0.8337,
+            0.7643,
+            0.6665,
+            0.5779,
+            0.5447,
+            0.4668,
+            0.2166
+          ],
+          "L_cv_pct": 88.59,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0374,
+            0.0705,
+            0.071,
+            0.0594,
+            0.0735,
+            0.0965,
+            0.1454,
+            0.1322,
+            0.0382,
+            0.0943,
+            0.3029
+          ],
+          "step_cv_pct": 70.03,
+          "step_max_min_ratio": 8.1,
+          "largest_step": "11->12 (d=0.3029)",
+          "smallest_step": "1->2 (d=0.0374)",
+          "hue_drift_deg": 9.73,
+          "hue_drift_at_step": "12",
+          "achromatic_steps_skipped": [
+            "1",
+            "2"
+          ],
+          "mid": {
+            "step": "9",
+            "hex": "#30a46c",
+            "contrast_vs_white": 3.16,
+            "contrast_vs_black": 6.65,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 12,
+          "L": [
+            0.9903,
+            0.9805,
+            0.9511,
+            0.9235,
+            0.8955,
+            0.8697,
+            0.8283,
+            0.7571,
+            0.5812,
+            0.543,
+            0.4221,
+            0.1238
+          ],
+          "L_cv_pct": 106.7,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0055,
+            0.0169,
+            0.0156,
+            0.0163,
+            0.015,
+            0.025,
+            0.048,
+            0.1455,
+            0.0381,
+            0.1373,
+            0.4055
+          ],
+          "step_cv_pct": 143.51,
+          "step_max_min_ratio": 73.88,
+          "largest_step": "11->12 (d=0.4055)",
+          "smallest_step": "1->2 (d=0.0055)",
+          "hue_drift_deg": null,
+          "hue_drift_at_step": null,
+          "achromatic_steps_skipped": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "10",
+            "11",
+            "12"
+          ],
+          "mid": {
+            "step": "9",
+            "hex": "#8d8d8d",
+            "contrast_vs_white": 3.32,
+            "contrast_vs_black": 6.33,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 95.86,
+        "mean_step_cv_pct": 101.55,
+        "worst_hue_drift_deg": 17.19,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    },
+    "chakra": {
+      "system": "Chakra UI",
+      "source": "@chakra-ui/theme@3.4.6 foundations/colors",
+      "note": "",
+      "scales": {
+        "blue": {
+          "n": 10,
+          "L": [
+            0.969,
+            0.8829,
+            0.7917,
+            0.6945,
+            0.6039,
+            0.5257,
+            0.4459,
+            0.3445,
+            0.2826,
+            0.2292
+          ],
+          "L_cv_pct": 18.23,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1712,
+            0.1592,
+            0.0545,
+            0.064,
+            0.064,
+            0.0819,
+            0.1282,
+            0.0846,
+            0.0652
+          ],
+          "step_cv_pct": 43.12,
+          "step_max_min_ratio": 3.14,
+          "largest_step": "50->100 (d=0.1712)",
+          "smallest_step": "200->300 (d=0.0545)",
+          "hue_drift_deg": 20.48,
+          "hue_drift_at_step": "900",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#3182ce",
+            "contrast_vs_white": 4.03,
+            "contrast_vs_black": 5.21,
+            "fails_AA_both": false
+          }
+        },
+        "red": {
+          "n": 10,
+          "L": [
+            0.9759,
+            0.9015,
+            0.809,
+            0.6975,
+            0.6338,
+            0.547,
+            0.4673,
+            0.3772,
+            0.3216,
+            0.2319
+          ],
+          "L_cv_pct": 19.01,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.1566,
+            0.1735,
+            0.1946,
+            0.0927,
+            0.1169,
+            0.085,
+            0.1594,
+            0.1098,
+            0.1411
+          ],
+          "step_cv_pct": 26.01,
+          "step_max_min_ratio": 2.29,
+          "largest_step": "200->300 (d=0.1946)",
+          "smallest_step": "500->600 (d=0.0850)",
+          "hue_drift_deg": 9.71,
+          "hue_drift_at_step": "600",
+          "achromatic_steps_skipped": [
+            "50"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#e53e3e",
+            "contrast_vs_white": 4.13,
+            "contrast_vs_black": 5.09,
+            "fails_AA_both": false
+          }
+        },
+        "green": {
+          "n": 10,
+          "L": [
+            0.9846,
+            0.9233,
+            0.8411,
+            0.7497,
+            0.6595,
+            0.5706,
+            0.4775,
+            0.3757,
+            0.3109,
+            0.2543
+          ],
+          "L_cv_pct": 18.74,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.176,
+            0.1338,
+            0.1463,
+            0.1025,
+            0.0913,
+            0.1117,
+            0.1282,
+            0.0798,
+            0.0613
+          ],
+          "step_cv_pct": 29.21,
+          "step_max_min_ratio": 2.87,
+          "largest_step": "50->100 (d=0.1760)",
+          "smallest_step": "800->900 (d=0.0613)",
+          "hue_drift_deg": 7.92,
+          "hue_drift_at_step": "900",
+          "achromatic_steps_skipped": [],
+          "mid": {
+            "step": "500",
+            "hex": "#38a169",
+            "contrast_vs_white": 3.25,
+            "contrast_vs_black": 6.47,
+            "fails_AA_both": false
+          }
+        },
+        "gray": {
+          "n": 10,
+          "L": [
+            0.9819,
+            0.9551,
+            0.921,
+            0.8494,
+            0.7019,
+            0.5264,
+            0.3583,
+            0.2319,
+            0.1235,
+            0.0909
+          ],
+          "L_cv_pct": 56.74,
+          "monotonicity_violations": [],
+          "step_distances": [
+            0.0219,
+            0.0203,
+            0.0558,
+            0.109,
+            0.1908,
+            0.2268,
+            0.1773,
+            0.144,
+            0.039
+          ],
+          "step_cv_pct": 67.86,
+          "step_max_min_ratio": 11.16,
+          "largest_step": "500->600 (d=0.2268)",
+          "smallest_step": "100->200 (d=0.0203)",
+          "hue_drift_deg": 19.05,
+          "hue_drift_at_step": "900",
+          "achromatic_steps_skipped": [
+            "50",
+            "100",
+            "200"
+          ],
+          "mid": {
+            "step": "500",
+            "hex": "#718096",
+            "contrast_vs_white": 4.02,
+            "contrast_vs_black": 5.23,
+            "fails_AA_both": false
+          }
+        }
+      },
+      "aggregate": {
+        "mean_L_cv_pct": 28.18,
+        "mean_step_cv_pct": 41.55,
+        "worst_hue_drift_deg": 20.48,
+        "monotonicity_violation_count": 0,
+        "mid_fails_AA_both_count": 0
+      }
+    }
+  },
+  "ranking_by_mean_step_cv": [
+    {
+      "system": "Chakra UI",
+      "key": "chakra",
+      "mean_L_cv_pct": 28.18,
+      "mean_step_cv_pct": 41.55,
+      "worst_hue_drift_deg": 20.48,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    },
+    {
+      "system": "GitHub Primer",
+      "key": "primer",
+      "mean_L_cv_pct": 41.42,
+      "mean_step_cv_pct": 44.21,
+      "worst_hue_drift_deg": 27.6,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    },
+    {
+      "system": "Bootstrap 5",
+      "key": "bootstrap",
+      "mean_L_cv_pct": 24.05,
+      "mean_step_cv_pct": 44.62,
+      "worst_hue_drift_deg": 11.85,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    },
+    {
+      "system": "Tailwind CSS v4",
+      "key": "tailwind",
+      "mean_L_cv_pct": 43.08,
+      "mean_step_cv_pct": 45.58,
+      "worst_hue_drift_deg": 13.15,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    },
+    {
+      "system": "Material Design (2014 palette)",
+      "key": "material",
+      "mean_L_cv_pct": 42.93,
+      "mean_step_cv_pct": 56.63,
+      "worst_hue_drift_deg": 20.84,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    },
+    {
+      "system": "Radix Colors",
+      "key": "radix",
+      "mean_L_cv_pct": 95.86,
+      "mean_step_cv_pct": 101.55,
+      "worst_hue_drift_deg": 17.19,
+      "monotonicity_violation_count": 0,
+      "mid_fails_AA_both_count": 0
+    }
+  ]
+}

@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Open-Source Color Audit</title>
+<meta name="description" content="Measuring the color scales of popular open-source design systems — perceptual step uniformity, hue drift, contrast. Reproducible.">
+<style>
+:root{
+  --bg:#0b0b0d; --card:#121216; --line:#2a2a31;
+  --text:#ececf1; --muted:#a8a8b3; --accent:#8fc1ff; --gold:#ffd166; --bar:#8fa7c4;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+main{max-width:1100px;margin:0 auto;padding:0 24px}
+a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+a:hover{color:#c4defc}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:#1a1a20;border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;margin-bottom:16px}
+section{padding:72px 0;border-top:1px solid var(--line)}
+
+/* hero */
+.hero{padding:110px 0 90px;border-top:none}
+.hero h1{font-size:clamp(46px,9vw,108px);line-height:.98;letter-spacing:-.035em;font-weight:800}
+.hero .thesis{font-size:clamp(20px,3vw,30px);margin-top:28px;max-width:22ch;font-weight:600;color:var(--text)}
+.hero .method-line{margin-top:22px;color:var(--muted);max-width:62ch}
+.kicker{display:block;color:var(--gold);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:14px;margin-bottom:22px}
+
+/* leaderboard */
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{ text-align:left;color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;padding:10px 12px;border-bottom:1px solid var(--line)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:14px 12px;border-bottom:1px solid var(--line);font-size:17px}
+.rank-cell{font-size:34px;font-weight:800;color:var(--gold);width:64px;line-height:1;font-variant-numeric:tabular-nums}
+.sys-cell{font-weight:700}
+.table-note{color:var(--muted);font-size:14px;margin-top:14px;max-width:75ch}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:32px;margin-top:36px}
+.card-head{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.rank-badge{font-size:72px;font-weight:800;line-height:.9;color:var(--gold);min-width:56px;font-variant-numeric:tabular-nums}
+.card-title{flex:1 1 320px}
+.card-title h3{font-size:clamp(24px,3vw,34px);letter-spacing:-.02em}
+.tagline{color:var(--text);font-weight:600;margin-top:4px}
+.source{color:var(--muted);font-size:13px;margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.hue-indicator{display:flex;align-items:center;gap:12px}
+.hue-num{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.hue-num small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.caveat{margin-top:20px;padding:14px 16px;border:1px solid var(--gold);border-radius:8px;color:var(--text);font-size:15px}
+.scales{margin-top:26px;display:grid;gap:26px}
+.scale-label{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.scale-name{font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:13px}
+.scale-stats{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.scale-block svg{display:block}
+.scale-block svg + svg{margin-top:6px}
+.bars-note{color:var(--muted);font-size:13px;margin-top:14px}
+.findings{margin-top:18px;padding-left:22px;display:grid;gap:10px}
+.findings li{font-size:16px}
+
+/* methodology */
+.method p{max-width:78ch;margin-top:14px}
+.method h4{margin-top:28px;font-size:18px}
+.formula{margin-top:10px;padding:14px 16px;background:#1a1a20;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;overflow-x:auto;white-space:pre}
+.method ul{margin-top:12px;padding-left:22px;display:grid;gap:8px;max-width:78ch}
+
+/* footer */
+footer{border-top:1px solid var(--line);margin-top:0;padding:64px 24px 90px}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-inner p{max-width:70ch}
+.install{display:inline-block;margin:18px 0;padding:12px 18px;background:#1a1a20;border:1px solid var(--line);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:15px;color:var(--text)}
+.footer-links{margin-top:10px;display:flex;gap:24px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<main>
+
+<header class="hero">
+  <span class="kicker">The Open-Source Color Audit</span>
+  <h1>We measured the color scales everyone copies.</h1>
+  <p class="thesis">Six design systems. 24 scales. 252 tokens. One perceptual ruler.</p>
+  <p class="method-line">Every hex token from Tailwind, Primer, Material, Bootstrap, Radix and Chakra was mapped into helmlab GenSpace and scored on step uniformity, lightness monotonicity, hue drift and WCAG contrast — measured, not guessed. <a href="#methodology">Read the methodology</a>.</p>
+</header>
+
+<section id="leaderboard">
+  <h2>Leaderboard</h2>
+  <table>
+    <thead><tr>
+      <th>#</th><th>System</th>
+      <th class="num">Mean step CV</th>
+      <th class="num">Mean L-CV</th>
+      <th class="num">Worst hue drift</th>
+      <th class="num">L-reversals</th>
+    </tr></thead>
+    <tbody>
+<tr>
+      <td class="rank-cell">1</td>
+      <td class="sys-cell">Chakra UI</td>
+      <td class="num">41.5%</td>
+      <td class="num">28.2%</td>
+      <td class="num">20.5°</td>
+      <td class="num">0</td>
+    </tr>
+<tr>
+      <td class="rank-cell">2</td>
+      <td class="sys-cell">GitHub Primer</td>
+      <td class="num">44.2%</td>
+      <td class="num">41.4%</td>
+      <td class="num">27.6°</td>
+      <td class="num">0</td>
+    </tr>
+<tr>
+      <td class="rank-cell">3</td>
+      <td class="sys-cell">Bootstrap 5</td>
+      <td class="num">44.6%</td>
+      <td class="num">24.1%</td>
+      <td class="num">11.8°</td>
+      <td class="num">0</td>
+    </tr>
+<tr>
+      <td class="rank-cell">4</td>
+      <td class="sys-cell">Tailwind CSS v4</td>
+      <td class="num">45.6%</td>
+      <td class="num">43.1%</td>
+      <td class="num">13.2°</td>
+      <td class="num">0</td>
+    </tr>
+<tr>
+      <td class="rank-cell">5</td>
+      <td class="sys-cell">Material Design (2014 palette)</td>
+      <td class="num">56.6%</td>
+      <td class="num">42.9%</td>
+      <td class="num">20.8°</td>
+      <td class="num">0</td>
+    </tr>
+<tr>
+      <td class="rank-cell">6</td>
+      <td class="sys-cell">Radix Colors</td>
+      <td class="num">101.5%</td>
+      <td class="num">95.9%</td>
+      <td class="num">17.2°</td>
+      <td class="num">0</td>
+    </tr>
+    </tbody>
+  </table>
+  <p class="table-note">Ranked by mean step-distance CV across each system's blue, red, green and gray scales — lower means more even steps. Two results hold everywhere: all 24 scales are strictly monotone in GenSpace lightness (zero reversals across 228 steps), and no system's mid shade is a contrast dead zone. Radix's position comes with a design-intent caveat — see its card.</p>
+</section>
+
+<section id="systems">
+  <h2>The six systems</h2>
+<article class="card" id="chakra">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 1 of 6">1</span>
+        <div class="card-title">
+          <h3>Chakra UI</h3>
+          <p class="tagline">Most balanced overall</p>
+          <p class="source">@chakra-ui/theme@3.4.6 foundations/colors</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Chakra UI: worst hue drift 20.48° (blue)"><title>Chakra UI: worst hue drift 20.48° (blue)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 25.25 5.95" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">20.5°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 43.1% · max/min 3.1× · hue drift 20.5°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Chakra UI blue scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#ebf8ff"><title>Chakra UI blue 50: #ebf8ff</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#bee3f8"><title>Chakra UI blue 100: #bee3f8</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#90cdf4"><title>Chakra UI blue 200: #90cdf4</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#63b3ed"><title>Chakra UI blue 300: #63b3ed</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#4299e1"><title>Chakra UI blue 400: #4299e1</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#3182ce"><title>Chakra UI blue 500: #3182ce</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#2b6cb0"><title>Chakra UI blue 600: #2b6cb0</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#2c5282"><title>Chakra UI blue 700: #2c5282</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#2a4365"><title>Chakra UI blue 800: #2a4365</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#1a365d"><title>Chakra UI blue 900: #1a365d</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Chakra UI blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="45.23" width="26.00" height="26.77" fill="#8fa7c4"><title>Chakra UI blue step 50→100: d = 0.1712</title></rect><rect x="114.10" y="47.11" width="26.00" height="24.89" fill="#8fa7c4"><title>Chakra UI blue step 100→200: d = 0.1592</title></rect><rect x="178.40" y="63.48" width="26.00" height="8.52" fill="#8fa7c4"><title>Chakra UI blue step 200→300: d = 0.0545</title></rect><rect x="242.70" y="61.99" width="26.00" height="10.01" fill="#8fa7c4"><title>Chakra UI blue step 300→400: d = 0.0640</title></rect><rect x="307.00" y="61.99" width="26.00" height="10.01" fill="#8fa7c4"><title>Chakra UI blue step 400→500: d = 0.0640</title></rect><rect x="371.30" y="59.19" width="26.00" height="12.81" fill="#8fa7c4"><title>Chakra UI blue step 500→600: d = 0.0819</title></rect><rect x="435.60" y="51.95" width="26.00" height="20.05" fill="#8fa7c4"><title>Chakra UI blue step 600→700: d = 0.1282</title></rect><rect x="499.90" y="58.77" width="26.00" height="13.23" fill="#8fa7c4"><title>Chakra UI blue step 700→800: d = 0.0846</title></rect><rect x="564.20" y="61.81" width="26.00" height="10.19" fill="#8fa7c4"><title>Chakra UI blue step 800→900: d = 0.0652</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 26.0% · max/min 2.3× · hue drift 9.7°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Chakra UI red scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#fff5f5"><title>Chakra UI red 50: #fff5f5</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#fed7d7"><title>Chakra UI red 100: #fed7d7</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#feb2b2"><title>Chakra UI red 200: #feb2b2</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#fc8181"><title>Chakra UI red 300: #fc8181</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#f56565"><title>Chakra UI red 400: #f56565</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#e53e3e"><title>Chakra UI red 500: #e53e3e</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#c53030"><title>Chakra UI red 600: #c53030</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#9b2c2c"><title>Chakra UI red 700: #9b2c2c</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#822727"><title>Chakra UI red 800: #822727</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#63171b"><title>Chakra UI red 900: #63171b</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Chakra UI red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="47.51" width="26.00" height="24.49" fill="#8fa7c4"><title>Chakra UI red step 50→100: d = 0.1566</title></rect><rect x="114.10" y="44.87" width="26.00" height="27.13" fill="#8fa7c4"><title>Chakra UI red step 100→200: d = 0.1735</title></rect><rect x="178.40" y="41.57" width="26.00" height="30.43" fill="#8fa7c4"><title>Chakra UI red step 200→300: d = 0.1946</title></rect><rect x="242.70" y="57.51" width="26.00" height="14.49" fill="#8fa7c4"><title>Chakra UI red step 300→400: d = 0.0927</title></rect><rect x="307.00" y="53.72" width="26.00" height="18.28" fill="#8fa7c4"><title>Chakra UI red step 400→500: d = 0.1169</title></rect><rect x="371.30" y="58.71" width="26.00" height="13.29" fill="#8fa7c4"><title>Chakra UI red step 500→600: d = 0.0850</title></rect><rect x="435.60" y="47.08" width="26.00" height="24.92" fill="#8fa7c4"><title>Chakra UI red step 600→700: d = 0.1594</title></rect><rect x="499.90" y="54.83" width="26.00" height="17.17" fill="#8fa7c4"><title>Chakra UI red step 700→800: d = 0.1098</title></rect><rect x="564.20" y="49.94" width="26.00" height="22.06" fill="#8fa7c4"><title>Chakra UI red step 800→900: d = 0.1411</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 67.9% · max/min 11.2× · hue drift 19.1°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Chakra UI gray scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#f7fafc"><title>Chakra UI gray 50: #f7fafc</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#edf2f7"><title>Chakra UI gray 100: #edf2f7</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#e2e8f0"><title>Chakra UI gray 200: #e2e8f0</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#cbd5e0"><title>Chakra UI gray 300: #cbd5e0</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#a0aec0"><title>Chakra UI gray 400: #a0aec0</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#718096"><title>Chakra UI gray 500: #718096</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#4a5568"><title>Chakra UI gray 600: #4a5568</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#2d3748"><title>Chakra UI gray 700: #2d3748</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#1a202c"><title>Chakra UI gray 800: #1a202c</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#171923"><title>Chakra UI gray 900: #171923</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Chakra UI gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="68.58" width="26.00" height="3.42" fill="#8fa7c4"><title>Chakra UI gray step 50→100: d = 0.0219</title></rect><rect x="114.10" y="68.83" width="26.00" height="3.17" fill="#8fa7c4"><title>Chakra UI gray step 100→200: d = 0.0203</title></rect><rect x="178.40" y="63.28" width="26.00" height="8.72" fill="#8fa7c4"><title>Chakra UI gray step 200→300: d = 0.0558</title></rect><rect x="242.70" y="54.96" width="26.00" height="17.04" fill="#8fa7c4"><title>Chakra UI gray step 300→400: d = 0.1090</title></rect><rect x="307.00" y="42.17" width="26.00" height="29.83" fill="#8fa7c4"><title>Chakra UI gray step 400→500: d = 0.1908</title></rect><rect x="371.30" y="36.54" width="26.00" height="35.46" fill="#8fa7c4"><title>Chakra UI gray step 500→600: d = 0.2268</title></rect><rect x="435.60" y="44.28" width="26.00" height="27.72" fill="#8fa7c4"><title>Chakra UI gray step 600→700: d = 0.1773</title></rect><rect x="499.90" y="49.48" width="26.00" height="22.52" fill="#8fa7c4"><title>Chakra UI gray step 700→800: d = 0.1440</title></rect><rect x="564.20" y="65.90" width="26.00" height="6.10" fill="#8fa7c4"><title>Chakra UI gray step 800→900: d = 0.0390</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>Wins the ranking not with a star scale but with no weak one: red (step CV 26.0%), green (29.2%) and blue (43.1%) are all mid-pack or better, and its chromatic lightness ladders (L-CV 18.2–19.0%) are the most consistent trio in the audit.</li>
+<li>Blue drifts 20.5° by step 900 — #1a365d turns noticeably indigo relative to 50. Gray-900 also picks up 19.1° of blue cast, a deliberate cool-gray choice but the largest gray drift measured.</li>
+<li>Gray shows the usual light-end crowding: 100→200 is a 0.020 step while 500→600 is 0.227 — an 11.2× spread inside one ramp.</li></ul>
+    </article>
+<article class="card" id="primer">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 2 of 6">2</span>
+        <div class="card-title">
+          <h3>GitHub Primer</h3>
+          <p class="tagline">Best chromatic ramps; neutral is two scales in one</p>
+          <p class="source">@primer/primitives@11.9.0 figma/scales/light.json</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="GitHub Primer: worst hue drift 27.6° (blue)"><title>GitHub Primer: worst hue drift 27.6° (blue)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 26.95 6.71" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">27.6°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 31.6% · max/min 3.0× · hue drift 27.6°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="GitHub Primer blue scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#ddf4ff"><title>GitHub Primer blue 0: #ddf4ff</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#b6e3ff"><title>GitHub Primer blue 1: #b6e3ff</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#80ccff"><title>GitHub Primer blue 2: #80ccff</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#54aeff"><title>GitHub Primer blue 3: #54aeff</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#218bff"><title>GitHub Primer blue 4: #218bff</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#0969da"><title>GitHub Primer blue 5: #0969da</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#0550ae"><title>GitHub Primer blue 6: #0550ae</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#033d8b"><title>GitHub Primer blue 7: #033d8b</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#0a3069"><title>GitHub Primer blue 8: #0a3069</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#002155"><title>GitHub Primer blue 9: #002155</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="GitHub Primer blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="47.86" width="26.00" height="24.14" fill="#8fa7c4"><title>GitHub Primer blue step 0→1: d = 0.1544</title></rect><rect x="114.10" y="52.53" width="26.00" height="19.47" fill="#8fa7c4"><title>GitHub Primer blue step 1→2: d = 0.1245</title></rect><rect x="178.40" y="63.89" width="26.00" height="8.11" fill="#8fa7c4"><title>GitHub Primer blue step 2→3: d = 0.0519</title></rect><rect x="242.70" y="63.68" width="26.00" height="8.32" fill="#8fa7c4"><title>GitHub Primer blue step 3→4: d = 0.0532</title></rect><rect x="307.00" y="57.79" width="26.00" height="14.21" fill="#8fa7c4"><title>GitHub Primer blue step 4→5: d = 0.0909</title></rect><rect x="371.30" y="54.63" width="26.00" height="17.37" fill="#8fa7c4"><title>GitHub Primer blue step 5→6: d = 0.1111</title></rect><rect x="435.60" y="55.44" width="26.00" height="16.56" fill="#8fa7c4"><title>GitHub Primer blue step 6→7: d = 0.1059</title></rect><rect x="499.90" y="54.57" width="26.00" height="17.43" fill="#8fa7c4"><title>GitHub Primer blue step 7→8: d = 0.1115</title></rect><rect x="564.20" y="59.07" width="26.00" height="12.93" fill="#8fa7c4"><title>GitHub Primer blue step 8→9: d = 0.0827</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 16.9% · max/min 1.8× · hue drift 11.2°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="GitHub Primer red scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#ffebe9"><title>GitHub Primer red 0: #ffebe9</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#ffcecb"><title>GitHub Primer red 1: #ffcecb</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#ffaba8"><title>GitHub Primer red 2: #ffaba8</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#ff8182"><title>GitHub Primer red 3: #ff8182</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#fa4549"><title>GitHub Primer red 4: #fa4549</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#cf222e"><title>GitHub Primer red 5: #cf222e</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#a40e26"><title>GitHub Primer red 6: #a40e26</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#82071e"><title>GitHub Primer red 7: #82071e</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#660018"><title>GitHub Primer red 8: #660018</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#4c0014"><title>GitHub Primer red 9: #4c0014</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="GitHub Primer red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="48.66" width="26.00" height="23.34" fill="#8fa7c4"><title>GitHub Primer red step 0→1: d = 0.1493</title></rect><rect x="114.10" y="46.22" width="26.00" height="25.78" fill="#8fa7c4"><title>GitHub Primer red step 1→2: d = 0.1649</title></rect><rect x="178.40" y="46.04" width="26.00" height="25.96" fill="#8fa7c4"><title>GitHub Primer red step 2→3: d = 0.1660</title></rect><rect x="242.70" y="41.90" width="26.00" height="30.10" fill="#8fa7c4"><title>GitHub Primer red step 3→4: d = 0.1925</title></rect><rect x="307.00" y="55.30" width="26.00" height="16.70" fill="#8fa7c4"><title>GitHub Primer red step 4→5: d = 0.1068</title></rect><rect x="371.30" y="51.24" width="26.00" height="20.76" fill="#8fa7c4"><title>GitHub Primer red step 5→6: d = 0.1328</title></rect><rect x="435.60" y="51.52" width="26.00" height="20.48" fill="#8fa7c4"><title>GitHub Primer red step 6→7: d = 0.1310</title></rect><rect x="499.90" y="52.80" width="26.00" height="19.20" fill="#8fa7c4"><title>GitHub Primer red step 7→8: d = 0.1228</title></rect><rect x="564.20" y="49.80" width="26.00" height="22.20" fill="#8fa7c4"><title>GitHub Primer red step 8→9: d = 0.1420</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 97.3% · max/min 18.6× · hue drift 5.7°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="GitHub Primer gray scale, 14 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="42.93" height="34" fill="#ffffff"><title>GitHub Primer gray 0: #ffffff</title></rect><rect x="45.93" y="0" width="42.93" height="34" fill="#f6f8fa"><title>GitHub Primer gray 1: #f6f8fa</title></rect><rect x="91.86" y="0" width="42.93" height="34" fill="#eff2f5"><title>GitHub Primer gray 2: #eff2f5</title></rect><rect x="137.79" y="0" width="42.93" height="34" fill="#e6eaef"><title>GitHub Primer gray 3: #e6eaef</title></rect><rect x="183.71" y="0" width="42.93" height="34" fill="#e0e6eb"><title>GitHub Primer gray 4: #e0e6eb</title></rect><rect x="229.64" y="0" width="42.93" height="34" fill="#dae0e7"><title>GitHub Primer gray 5: #dae0e7</title></rect><rect x="275.57" y="0" width="42.93" height="34" fill="#d1d9e0"><title>GitHub Primer gray 6: #d1d9e0</title></rect><rect x="321.50" y="0" width="42.93" height="34" fill="#c8d1da"><title>GitHub Primer gray 7: #c8d1da</title></rect><rect x="367.43" y="0" width="42.93" height="34" fill="#818b98"><title>GitHub Primer gray 8: #818b98</title></rect><rect x="413.36" y="0" width="42.93" height="34" fill="#59636e"><title>GitHub Primer gray 9: #59636e</title></rect><rect x="459.29" y="0" width="42.93" height="34" fill="#454c54"><title>GitHub Primer gray 10: #454c54</title></rect><rect x="505.21" y="0" width="42.93" height="34" fill="#393f46"><title>GitHub Primer gray 11: #393f46</title></rect><rect x="551.14" y="0" width="42.93" height="34" fill="#25292e"><title>GitHub Primer gray 12: #25292e</title></rect><rect x="597.07" y="0" width="42.93" height="34" fill="#1f2328"><title>GitHub Primer gray 13: #1f2328</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="GitHub Primer gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="31.43" y="68.78" width="26.00" height="3.22" fill="#8fa7c4"><title>GitHub Primer gray step 0→1: d = 0.0206</title></rect><rect x="77.36" y="69.75" width="26.00" height="2.25" fill="#8fa7c4"><title>GitHub Primer gray step 1→2: d = 0.0144</title></rect><rect x="123.29" y="69.33" width="26.00" height="2.67" fill="#8fa7c4"><title>GitHub Primer gray step 2→3: d = 0.0171</title></rect><rect x="169.21" y="68.81" width="26.00" height="3.19" fill="#8fa7c4"><title>GitHub Primer gray step 3→4: d = 0.0204</title></rect><rect x="215.14" y="70.00" width="26.00" height="2.00" fill="#8fa7c4"><title>GitHub Primer gray step 4→5: d = 0.0111</title></rect><rect x="261.07" y="67.86" width="26.00" height="4.14" fill="#8fa7c4"><title>GitHub Primer gray step 5→6: d = 0.0265</title></rect><rect x="307.00" y="68.90" width="26.00" height="3.10" fill="#8fa7c4"><title>GitHub Primer gray step 6→7: d = 0.0198</title></rect><rect x="352.93" y="39.79" width="26.00" height="32.21" fill="#8fa7c4"><title>GitHub Primer gray step 7→8: d = 0.2060</title></rect><rect x="398.86" y="42.51" width="26.00" height="29.49" fill="#8fa7c4"><title>GitHub Primer gray step 8→9: d = 0.1886</title></rect><rect x="444.79" y="51.69" width="26.00" height="20.31" fill="#8fa7c4"><title>GitHub Primer gray step 9→10: d = 0.1299</title></rect><rect x="490.71" y="59.46" width="26.00" height="12.54" fill="#8fa7c4"><title>GitHub Primer gray step 10→11: d = 0.0802</title></rect><rect x="536.64" y="50.16" width="26.00" height="21.84" fill="#8fa7c4"><title>GitHub Primer gray step 11→12: d = 0.1397</title></rect><rect x="582.57" y="65.89" width="26.00" height="6.11" fill="#8fa7c4"><title>GitHub Primer gray step 12→13: d = 0.0391</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>Primer red is the single most even chromatic scale in the audit: step CV 16.9%, max/min ratio only 1.8×. Blue and green (31.6% / 31.1%) with L-CVs of 19–22% are the tightest 10-step chromatic set measured.</li>
+<li>All three chromatic mid shades (blue #0969da, red #cf222e, green #1a7f37) clear WCAG AA against white — the only system where every chromatic mid supports white text. Clearly engineered.</li>
+<li>The 14-step neutral behaves like two scales glued together: steps 4→5 differ by just 0.011 while 7→8 jumps 0.206 (18.6× spread). Blue also drifts 27.6° by its darkest step — the largest hue drift in the audit.</li></ul>
+    </article>
+<article class="card" id="bootstrap">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 3 of 6">3</span>
+        <div class="card-title">
+          <h3>Bootstrap 5</h3>
+          <p class="tagline">Mechanical ramps, surprisingly disciplined lightness</p>
+          <p class="source">bootstrap@5.3.8 scss/_variables.scss</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Bootstrap 5: worst hue drift 11.85° (red)"><title>Bootstrap 5: worst hue drift 11.85° (red)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 23.08 5.32" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">11.8°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 68.0% · max/min 8.0× · hue drift 2.9°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Bootstrap 5 blue scale, 9 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="68.44" height="34" fill="#cfe2ff"><title>Bootstrap 5 blue 100: #cfe2ff</title></rect><rect x="71.44" y="0" width="68.44" height="34" fill="#9ec5fe"><title>Bootstrap 5 blue 200: #9ec5fe</title></rect><rect x="142.89" y="0" width="68.44" height="34" fill="#6ea8fe"><title>Bootstrap 5 blue 300: #6ea8fe</title></rect><rect x="214.33" y="0" width="68.44" height="34" fill="#3d8bfd"><title>Bootstrap 5 blue 400: #3d8bfd</title></rect><rect x="285.78" y="0" width="68.44" height="34" fill="#0d6efd"><title>Bootstrap 5 blue 500: #0d6efd</title></rect><rect x="357.22" y="0" width="68.44" height="34" fill="#0a58ca"><title>Bootstrap 5 blue 600: #0a58ca</title></rect><rect x="428.67" y="0" width="68.44" height="34" fill="#084298"><title>Bootstrap 5 blue 700: #084298</title></rect><rect x="500.11" y="0" width="68.44" height="34" fill="#052c65"><title>Bootstrap 5 blue 800: #052c65</title></rect><rect x="571.56" y="0" width="68.44" height="34" fill="#031633"><title>Bootstrap 5 blue 900: #031633</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Bootstrap 5 blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="56.94" y="24.64" width="26.00" height="47.36" fill="#8fa7c4"><title>Bootstrap 5 blue step 100→200: d = 0.3029</title></rect><rect x="128.39" y="65.39" width="26.00" height="6.61" fill="#8fa7c4"><title>Bootstrap 5 blue step 200→300: d = 0.0423</title></rect><rect x="199.83" y="65.84" width="26.00" height="6.16" fill="#8fa7c4"><title>Bootstrap 5 blue step 300→400: d = 0.0394</title></rect><rect x="271.28" y="66.06" width="26.00" height="5.94" fill="#8fa7c4"><title>Bootstrap 5 blue step 400→500: d = 0.0380</title></rect><rect x="342.72" y="55.46" width="26.00" height="16.54" fill="#8fa7c4"><title>Bootstrap 5 blue step 500→600: d = 0.1058</title></rect><rect x="414.17" y="51.38" width="26.00" height="20.62" fill="#8fa7c4"><title>Bootstrap 5 blue step 600→700: d = 0.1319</title></rect><rect x="485.61" y="45.83" width="26.00" height="26.17" fill="#8fa7c4"><title>Bootstrap 5 blue step 700→800: d = 0.1674</title></rect><rect x="557.06" y="42.28" width="26.00" height="29.72" fill="#8fa7c4"><title>Bootstrap 5 blue step 800→900: d = 0.1901</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 28.2% · max/min 2.1× · hue drift 11.8°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Bootstrap 5 red scale, 9 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="68.44" height="34" fill="#f8d7da"><title>Bootstrap 5 red 100: #f8d7da</title></rect><rect x="71.44" y="0" width="68.44" height="34" fill="#f1aeb5"><title>Bootstrap 5 red 200: #f1aeb5</title></rect><rect x="142.89" y="0" width="68.44" height="34" fill="#ea868f"><title>Bootstrap 5 red 300: #ea868f</title></rect><rect x="214.33" y="0" width="68.44" height="34" fill="#e35d6a"><title>Bootstrap 5 red 400: #e35d6a</title></rect><rect x="285.78" y="0" width="68.44" height="34" fill="#dc3545"><title>Bootstrap 5 red 500: #dc3545</title></rect><rect x="357.22" y="0" width="68.44" height="34" fill="#b02a37"><title>Bootstrap 5 red 600: #b02a37</title></rect><rect x="428.67" y="0" width="68.44" height="34" fill="#842029"><title>Bootstrap 5 red 700: #842029</title></rect><rect x="500.11" y="0" width="68.44" height="34" fill="#58151c"><title>Bootstrap 5 red 800: #58151c</title></rect><rect x="571.56" y="0" width="68.44" height="34" fill="#2c0b0e"><title>Bootstrap 5 red 900: #2c0b0e</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Bootstrap 5 red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="56.94" y="44.22" width="26.00" height="27.78" fill="#8fa7c4"><title>Bootstrap 5 red step 100→200: d = 0.1777</title></rect><rect x="128.39" y="49.42" width="26.00" height="22.58" fill="#8fa7c4"><title>Bootstrap 5 red step 200→300: d = 0.1444</title></rect><rect x="199.83" y="52.21" width="26.00" height="19.79" fill="#8fa7c4"><title>Bootstrap 5 red step 300→400: d = 0.1266</title></rect><rect x="271.28" y="51.88" width="26.00" height="20.12" fill="#8fa7c4"><title>Bootstrap 5 red step 400→500: d = 0.1287</title></rect><rect x="342.72" y="51.85" width="26.00" height="20.15" fill="#8fa7c4"><title>Bootstrap 5 red step 500→600: d = 0.1289</title></rect><rect x="414.17" y="45.56" width="26.00" height="26.44" fill="#8fa7c4"><title>Bootstrap 5 red step 600→700: d = 0.1691</title></rect><rect x="485.61" y="37.68" width="26.00" height="34.32" fill="#8fa7c4"><title>Bootstrap 5 red step 700→800: d = 0.2195</title></rect><rect x="557.06" y="29.75" width="26.00" height="42.25" fill="#8fa7c4"><title>Bootstrap 5 red step 800→900: d = 0.2702</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 67.6% · max/min 10.3× · hue drift — (achromatic)</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Bootstrap 5 gray scale, 9 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="68.44" height="34" fill="#f8f9fa"><title>Bootstrap 5 gray 100: #f8f9fa</title></rect><rect x="71.44" y="0" width="68.44" height="34" fill="#e9ecef"><title>Bootstrap 5 gray 200: #e9ecef</title></rect><rect x="142.89" y="0" width="68.44" height="34" fill="#dee2e6"><title>Bootstrap 5 gray 300: #dee2e6</title></rect><rect x="214.33" y="0" width="68.44" height="34" fill="#ced4da"><title>Bootstrap 5 gray 400: #ced4da</title></rect><rect x="285.78" y="0" width="68.44" height="34" fill="#adb5bd"><title>Bootstrap 5 gray 500: #adb5bd</title></rect><rect x="357.22" y="0" width="68.44" height="34" fill="#6c757d"><title>Bootstrap 5 gray 600: #6c757d</title></rect><rect x="428.67" y="0" width="68.44" height="34" fill="#495057"><title>Bootstrap 5 gray 700: #495057</title></rect><rect x="500.11" y="0" width="68.44" height="34" fill="#343a40"><title>Bootstrap 5 gray 800: #343a40</title></rect><rect x="571.56" y="0" width="68.44" height="34" fill="#212529"><title>Bootstrap 5 gray 900: #212529</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Bootstrap 5 gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="56.94" y="67.18" width="26.00" height="4.82" fill="#8fa7c4"><title>Bootstrap 5 gray step 100→200: d = 0.0308</title></rect><rect x="128.39" y="68.48" width="26.00" height="3.52" fill="#8fa7c4"><title>Bootstrap 5 gray step 200→300: d = 0.0225</title></rect><rect x="199.83" y="66.37" width="26.00" height="5.63" fill="#8fa7c4"><title>Bootstrap 5 gray step 300→400: d = 0.0360</title></rect><rect x="271.28" y="59.21" width="26.00" height="12.79" fill="#8fa7c4"><title>Bootstrap 5 gray step 400→500: d = 0.0818</title></rect><rect x="342.72" y="35.94" width="26.00" height="36.06" fill="#8fa7c4"><title>Bootstrap 5 gray step 500→600: d = 0.2306</title></rect><rect x="414.17" y="42.37" width="26.00" height="29.63" fill="#8fa7c4"><title>Bootstrap 5 gray step 600→700: d = 0.1895</title></rect><rect x="485.61" y="50.72" width="26.00" height="21.28" fill="#8fa7c4"><title>Bootstrap 5 gray step 700→800: d = 0.1361</title></rect><rect x="557.06" y="51.22" width="26.00" height="20.78" fill="#8fa7c4"><title>Bootstrap 5 gray step 800→900: d = 0.1329</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>The tint/shade mix() construction yields the lowest mean L-CV of any system (24.1%). Green is the audit's best single scale on lightness: L-CV 7.5%, step CV 14.8%, max/min 1.47×.</li>
+<li>Hue is near-immovable: blue drifts only 2.9° across nine steps — a free benefit of mixing with pure white and black.</li>
+<li>The cost shows at the light end of blue: 100→200 is a 0.303 jump while 400→500 is 0.038, an 8.0× imbalance inside one ramp — equal RGB mixing is not equal perceptual spacing.</li></ul>
+    </article>
+<article class="card" id="tailwind">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 4 of 6">4</span>
+        <div class="card-title">
+          <h3>Tailwind CSS v4</h3>
+          <p class="tagline">Hue-true, but 500 sits close to 600</p>
+          <p class="source">tailwindcss@4.3.2 theme.css</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Tailwind CSS v4: worst hue drift 13.15° (red)"><title>Tailwind CSS v4: worst hue drift 13.15° (red)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 23.41 5.39" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">13.2°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 57.2% · max/min 4.9× · hue drift 9.6°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Tailwind CSS v4 blue scale, 11 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="55.45" height="34" fill="#eff6ff"><title>Tailwind CSS v4 blue 50: #eff6ff</title></rect><rect x="58.45" y="0" width="55.45" height="34" fill="#dbeafe"><title>Tailwind CSS v4 blue 100: #dbeafe</title></rect><rect x="116.91" y="0" width="55.45" height="34" fill="#bedbff"><title>Tailwind CSS v4 blue 200: #bedbff</title></rect><rect x="175.36" y="0" width="55.45" height="34" fill="#8ec5ff"><title>Tailwind CSS v4 blue 300: #8ec5ff</title></rect><rect x="233.82" y="0" width="55.45" height="34" fill="#51a2ff"><title>Tailwind CSS v4 blue 400: #51a2ff</title></rect><rect x="292.27" y="0" width="55.45" height="34" fill="#2b7fff"><title>Tailwind CSS v4 blue 500: #2b7fff</title></rect><rect x="350.73" y="0" width="55.45" height="34" fill="#155dfc"><title>Tailwind CSS v4 blue 600: #155dfc</title></rect><rect x="409.18" y="0" width="55.45" height="34" fill="#1447e6"><title>Tailwind CSS v4 blue 700: #1447e6</title></rect><rect x="467.64" y="0" width="55.45" height="34" fill="#193cb8"><title>Tailwind CSS v4 blue 800: #193cb8</title></rect><rect x="526.09" y="0" width="55.45" height="34" fill="#1c398e"><title>Tailwind CSS v4 blue 900: #1c398e</title></rect><rect x="584.55" y="0" width="55.45" height="34" fill="#162456"><title>Tailwind CSS v4 blue 950: #162456</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Tailwind CSS v4 blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="43.95" y="61.51" width="26.00" height="10.49" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 50→100: d = 0.0671</title></rect><rect x="102.41" y="53.16" width="26.00" height="18.84" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 100→200: d = 0.1205</title></rect><rect x="160.86" y="37.70" width="26.00" height="34.30" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 200→300: d = 0.2194</title></rect><rect x="219.32" y="63.71" width="26.00" height="8.29" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 300→400: d = 0.0530</title></rect><rect x="277.77" y="64.56" width="26.00" height="7.44" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 400→500: d = 0.0476</title></rect><rect x="336.23" y="64.95" width="26.00" height="7.05" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 500→600: d = 0.0451</title></rect><rect x="394.68" y="63.13" width="26.00" height="8.87" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 600→700: d = 0.0567</title></rect><rect x="453.14" y="56.24" width="26.00" height="15.76" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 700→800: d = 0.1008</title></rect><rect x="511.59" y="56.02" width="26.00" height="15.98" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 800→900: d = 0.1022</title></rect><rect x="570.05" y="43.57" width="26.00" height="28.43" fill="#8fa7c4"><title>Tailwind CSS v4 blue step 900→950: d = 0.1818</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 42.2% · max/min 3.8× · hue drift 13.2°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Tailwind CSS v4 red scale, 11 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="55.45" height="34" fill="#fef2f2"><title>Tailwind CSS v4 red 50: #fef2f2</title></rect><rect x="58.45" y="0" width="55.45" height="34" fill="#ffe2e2"><title>Tailwind CSS v4 red 100: #ffe2e2</title></rect><rect x="116.91" y="0" width="55.45" height="34" fill="#ffc9c9"><title>Tailwind CSS v4 red 200: #ffc9c9</title></rect><rect x="175.36" y="0" width="55.45" height="34" fill="#ffa2a2"><title>Tailwind CSS v4 red 300: #ffa2a2</title></rect><rect x="233.82" y="0" width="55.45" height="34" fill="#ff6467"><title>Tailwind CSS v4 red 400: #ff6467</title></rect><rect x="292.27" y="0" width="55.45" height="34" fill="#fb2c36"><title>Tailwind CSS v4 red 500: #fb2c36</title></rect><rect x="350.73" y="0" width="55.45" height="34" fill="#e7000b"><title>Tailwind CSS v4 red 600: #e7000b</title></rect><rect x="409.18" y="0" width="55.45" height="34" fill="#c10007"><title>Tailwind CSS v4 red 700: #c10007</title></rect><rect x="467.64" y="0" width="55.45" height="34" fill="#9f0712"><title>Tailwind CSS v4 red 800: #9f0712</title></rect><rect x="526.09" y="0" width="55.45" height="34" fill="#82181a"><title>Tailwind CSS v4 red 900: #82181a</title></rect><rect x="584.55" y="0" width="55.45" height="34" fill="#460809"><title>Tailwind CSS v4 red 950: #460809</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Tailwind CSS v4 red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="43.95" y="56.74" width="26.00" height="15.26" fill="#8fa7c4"><title>Tailwind CSS v4 red step 50→100: d = 0.0976</title></rect><rect x="102.41" y="52.99" width="26.00" height="19.01" fill="#8fa7c4"><title>Tailwind CSS v4 red step 100→200: d = 0.1216</title></rect><rect x="160.86" y="44.76" width="26.00" height="27.24" fill="#8fa7c4"><title>Tailwind CSS v4 red step 200→300: d = 0.1742</title></rect><rect x="219.32" y="37.12" width="26.00" height="34.88" fill="#8fa7c4"><title>Tailwind CSS v4 red step 300→400: d = 0.2231</title></rect><rect x="277.77" y="47.80" width="26.00" height="24.20" fill="#8fa7c4"><title>Tailwind CSS v4 red step 400→500: d = 0.1548</title></rect><rect x="336.23" y="58.82" width="26.00" height="13.18" fill="#8fa7c4"><title>Tailwind CSS v4 red step 500→600: d = 0.0843</title></rect><rect x="394.68" y="55.36" width="26.00" height="16.64" fill="#8fa7c4"><title>Tailwind CSS v4 red step 600→700: d = 0.1064</title></rect><rect x="453.14" y="51.49" width="26.00" height="20.51" fill="#8fa7c4"><title>Tailwind CSS v4 red step 700→800: d = 0.1312</title></rect><rect x="511.59" y="47.76" width="26.00" height="24.24" fill="#8fa7c4"><title>Tailwind CSS v4 red step 800→900: d = 0.1550</title></rect><rect x="570.05" y="22.36" width="26.00" height="49.64" fill="#8fa7c4"><title>Tailwind CSS v4 red step 900→950: d = 0.3175</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 57.6% · max/min 22.1× · hue drift 6.9°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Tailwind CSS v4 gray scale, 11 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="55.45" height="34" fill="#f9fafb"><title>Tailwind CSS v4 gray 50: #f9fafb</title></rect><rect x="58.45" y="0" width="55.45" height="34" fill="#f3f4f6"><title>Tailwind CSS v4 gray 100: #f3f4f6</title></rect><rect x="116.91" y="0" width="55.45" height="34" fill="#e5e7eb"><title>Tailwind CSS v4 gray 200: #e5e7eb</title></rect><rect x="175.36" y="0" width="55.45" height="34" fill="#d1d5dc"><title>Tailwind CSS v4 gray 300: #d1d5dc</title></rect><rect x="233.82" y="0" width="55.45" height="34" fill="#99a1af"><title>Tailwind CSS v4 gray 400: #99a1af</title></rect><rect x="292.27" y="0" width="55.45" height="34" fill="#6a7282"><title>Tailwind CSS v4 gray 500: #6a7282</title></rect><rect x="350.73" y="0" width="55.45" height="34" fill="#4a5565"><title>Tailwind CSS v4 gray 600: #4a5565</title></rect><rect x="409.18" y="0" width="55.45" height="34" fill="#364153"><title>Tailwind CSS v4 gray 700: #364153</title></rect><rect x="467.64" y="0" width="55.45" height="34" fill="#1e2939"><title>Tailwind CSS v4 gray 800: #1e2939</title></rect><rect x="526.09" y="0" width="55.45" height="34" fill="#101828"><title>Tailwind CSS v4 gray 900: #101828</title></rect><rect x="584.55" y="0" width="55.45" height="34" fill="#030712"><title>Tailwind CSS v4 gray 950: #030712</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Tailwind CSS v4 gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="43.95" y="70.00" width="26.00" height="2.00" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 50→100: d = 0.0092</title></rect><rect x="102.41" y="67.97" width="26.00" height="4.03" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 100→200: d = 0.0258</title></rect><rect x="160.86" y="65.43" width="26.00" height="6.57" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 200→300: d = 0.0420</title></rect><rect x="219.32" y="48.20" width="26.00" height="23.80" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 300→400: d = 0.1522</title></rect><rect x="277.77" y="40.23" width="26.00" height="31.77" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 400→500: d = 0.2032</title></rect><rect x="336.23" y="45.12" width="26.00" height="26.88" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 500→600: d = 0.1719</title></rect><rect x="394.68" y="53.42" width="26.00" height="18.58" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 600→700: d = 0.1188</title></rect><rect x="453.14" y="48.86" width="26.00" height="23.14" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 700→800: d = 0.1480</title></rect><rect x="511.59" y="57.21" width="26.00" height="14.79" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 800→900: d = 0.0946</title></rect><rect x="570.05" y="55.79" width="26.00" height="16.21" fill="#8fa7c4"><title>Tailwind CSS v4 gray step 900→950: d = 0.1037</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>Hue handling is strong for an 11-step system: worst drift 13.2° (red), blue only 9.6°, gray 6.9° — consistent with the v4 oklch redesign.</li>
+<li>Blue 500→600 is only 0.045 while 200→300 is 0.219 (4.9×): the two most-used button shades are perceptually the closest pair in the ramp. Red shows the same pattern, plus a 0.318 cliff at 900→950.</li>
+<li>Gray max/min is 22.1×: 50→100 is nearly imperceptible (0.009) while 400→500 spans 0.203. Mid-500s are tuned dark-first: green-500 reads 9.47 against black but only 2.22 against white.</li></ul>
+    </article>
+<article class="card" id="material">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 5 of 6">5</span>
+        <div class="card-title">
+          <h3>Material Design (2014 palette)</h3>
+          <p class="tagline">Its age shows at the ramp ends</p>
+          <p class="source">material-colors@1.2.6 (mirror of 2014 spec palette)</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Material Design (2014 palette): worst hue drift 20.84° (red)"><title>Material Design (2014 palette): worst hue drift 20.84° (red)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 25.34 5.98" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">20.8°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 68.9% · max/min 6.2× · hue drift 17.7°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Material Design (2014 palette) blue scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#e3f2fd"><title>Material Design (2014 palette) blue 50: #e3f2fd</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#bbdefb"><title>Material Design (2014 palette) blue 100: #bbdefb</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#90caf9"><title>Material Design (2014 palette) blue 200: #90caf9</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#64b5f6"><title>Material Design (2014 palette) blue 300: #64b5f6</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#42a5f5"><title>Material Design (2014 palette) blue 400: #42a5f5</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#2196f3"><title>Material Design (2014 palette) blue 500: #2196f3</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#1e88e5"><title>Material Design (2014 palette) blue 600: #1e88e5</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#1976d2"><title>Material Design (2014 palette) blue 700: #1976d2</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#1565c0"><title>Material Design (2014 palette) blue 800: #1565c0</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#0d47a1"><title>Material Design (2014 palette) blue 900: #0d47a1</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Material Design (2014 palette) blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="46.65" width="26.00" height="25.35" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 50→100: d = 0.1621</title></rect><rect x="114.10" y="48.05" width="26.00" height="23.95" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 100→200: d = 0.1532</title></rect><rect x="178.40" y="66.15" width="26.00" height="5.85" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 200→300: d = 0.0374</title></rect><rect x="242.70" y="67.56" width="26.00" height="4.44" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 300→400: d = 0.0284</title></rect><rect x="307.00" y="67.89" width="26.00" height="4.11" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 400→500: d = 0.0263</title></rect><rect x="371.30" y="65.87" width="26.00" height="6.13" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 500→600: d = 0.0392</title></rect><rect x="435.60" y="63.73" width="26.00" height="8.27" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 600→700: d = 0.0529</title></rect><rect x="499.90" y="63.73" width="26.00" height="8.27" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 700→800: d = 0.0529</title></rect><rect x="564.20" y="55.83" width="26.00" height="16.17" fill="#8fa7c4"><title>Material Design (2014 palette) blue step 800→900: d = 0.1034</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 54.4% · max/min 5.8× · hue drift 20.8°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Material Design (2014 palette) red scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#ffebee"><title>Material Design (2014 palette) red 50: #ffebee</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#ffcdd2"><title>Material Design (2014 palette) red 100: #ffcdd2</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#ef9a9a"><title>Material Design (2014 palette) red 200: #ef9a9a</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#e57373"><title>Material Design (2014 palette) red 300: #e57373</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#ef5350"><title>Material Design (2014 palette) red 400: #ef5350</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#f44336"><title>Material Design (2014 palette) red 500: #f44336</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#e53935"><title>Material Design (2014 palette) red 600: #e53935</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#d32f2f"><title>Material Design (2014 palette) red 700: #d32f2f</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#c62828"><title>Material Design (2014 palette) red 800: #c62828</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#b71c1c"><title>Material Design (2014 palette) red 900: #b71c1c</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Material Design (2014 palette) red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="49.97" width="26.00" height="22.03" fill="#8fa7c4"><title>Material Design (2014 palette) red step 50→100: d = 0.1409</title></rect><rect x="114.10" y="40.23" width="26.00" height="31.77" fill="#8fa7c4"><title>Material Design (2014 palette) red step 100→200: d = 0.2032</title></rect><rect x="178.40" y="50.14" width="26.00" height="21.86" fill="#8fa7c4"><title>Material Design (2014 palette) red step 200→300: d = 0.1398</title></rect><rect x="242.70" y="48.31" width="26.00" height="23.69" fill="#8fa7c4"><title>Material Design (2014 palette) red step 300→400: d = 0.1515</title></rect><rect x="307.00" y="55.77" width="26.00" height="16.23" fill="#8fa7c4"><title>Material Design (2014 palette) red step 400→500: d = 0.1038</title></rect><rect x="371.30" y="62.99" width="26.00" height="9.01" fill="#8fa7c4"><title>Material Design (2014 palette) red step 500→600: d = 0.0576</title></rect><rect x="435.60" y="64.18" width="26.00" height="7.82" fill="#8fa7c4"><title>Material Design (2014 palette) red step 600→700: d = 0.0500</title></rect><rect x="499.90" y="66.51" width="26.00" height="5.49" fill="#8fa7c4"><title>Material Design (2014 palette) red step 700→800: d = 0.0351</title></rect><rect x="564.20" y="65.14" width="26.00" height="6.86" fill="#8fa7c4"><title>Material Design (2014 palette) red step 800→900: d = 0.0439</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 71.4% · max/min 22.7× · hue drift — (achromatic)</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Material Design (2014 palette) gray scale, 10 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="61.30" height="34" fill="#fafafa"><title>Material Design (2014 palette) gray 50: #fafafa</title></rect><rect x="64.30" y="0" width="61.30" height="34" fill="#f5f5f5"><title>Material Design (2014 palette) gray 100: #f5f5f5</title></rect><rect x="128.60" y="0" width="61.30" height="34" fill="#eeeeee"><title>Material Design (2014 palette) gray 200: #eeeeee</title></rect><rect x="192.90" y="0" width="61.30" height="34" fill="#e0e0e0"><title>Material Design (2014 palette) gray 300: #e0e0e0</title></rect><rect x="257.20" y="0" width="61.30" height="34" fill="#bdbdbd"><title>Material Design (2014 palette) gray 400: #bdbdbd</title></rect><rect x="321.50" y="0" width="61.30" height="34" fill="#9e9e9e"><title>Material Design (2014 palette) gray 500: #9e9e9e</title></rect><rect x="385.80" y="0" width="61.30" height="34" fill="#757575"><title>Material Design (2014 palette) gray 600: #757575</title></rect><rect x="450.10" y="0" width="61.30" height="34" fill="#616161"><title>Material Design (2014 palette) gray 700: #616161</title></rect><rect x="514.40" y="0" width="61.30" height="34" fill="#424242"><title>Material Design (2014 palette) gray 800: #424242</title></rect><rect x="578.70" y="0" width="61.30" height="34" fill="#212121"><title>Material Design (2014 palette) gray 900: #212121</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Material Design (2014 palette) gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="49.80" y="70.00" width="26.00" height="2.00" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 50→100: d = 0.0092</title></rect><rect x="114.10" y="69.92" width="26.00" height="2.08" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 100→200: d = 0.0133</title></rect><rect x="178.40" y="67.61" width="26.00" height="4.39" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 200→300: d = 0.0281</title></rect><rect x="242.70" y="59.08" width="26.00" height="12.92" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 300→400: d = 0.0826</title></rect><rect x="307.00" y="57.65" width="26.00" height="14.35" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 400→500: d = 0.0918</title></rect><rect x="371.30" y="47.70" width="26.00" height="24.30" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 500→600: d = 0.1554</title></rect><rect x="435.60" y="57.27" width="26.00" height="14.73" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 600→700: d = 0.0942</title></rect><rect x="499.90" y="44.78" width="26.00" height="27.22" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 700→800: d = 0.1741</title></rect><rect x="564.20" y="39.16" width="26.00" height="32.84" fill="#8fa7c4"><title>Material Design (2014 palette) gray step 800→900: d = 0.2100</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>Blue 400→500 is just 0.026 — #42a5f5 and #2196f3 are near-duplicates — while 50→100 spans 0.162: a 6.2× spread and the worst chromatic step consistency measured (CV 68.9%).</li>
+<li>Red drifts 20.8° by step 500 and its L-CV (65.5%) is the worst chromatic lightness ladder in the audit; 700→800 nearly stalls at 0.035.</li>
+<li>Credit where due: green is clean (step CV 31.8%, hue drift 3.6°), and gray's neutrality is perfect — every step registers achromatic in GenSpace.</li></ul>
+    </article>
+<article class="card" id="radix">
+      <header class="card-head">
+        <span class="rank-badge" aria-label="Rank 6 of 6">6</span>
+        <div class="card-title">
+          <h3>Radix Colors</h3>
+          <p class="tagline">Uneven by explicit design</p>
+          <p class="source">@radix-ui/colors@3.0.0 (light scales)</p>
+        </div>
+        <div class="hue-indicator">
+          <svg viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Radix Colors: worst hue drift 17.19° (blue)"><title>Radix Colors: worst hue drift 17.19° (blue)</title><circle cx="20" cy="20" r="15" fill="none" stroke="#2a2a31" stroke-width="4"/><path d="M 20 5 A 15 15 0 0 1 24.43 5.67" fill="none" stroke="#ffd166" stroke-width="4" stroke-linecap="butt"/></svg>
+          <span class="hue-num">17.2°<small>worst hue drift</small></span>
+        </div>
+      </header>
+      <p class="caveat">Caveat: Radix is role-based by design. Its documentation assigns each of the 12 steps a UI role rather than promising even perceptual spacing, so step-uniformity metrics measure a contract Radix never signed. The rank below is only meaningful if you need an even ramp.</p>
+      <div class="scales"><div class="scale-block">
+        <div class="scale-label"><span class="scale-name">blue</span><span class="scale-stats">step CV 92.7% · max/min 11.8× · hue drift 17.2°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Radix Colors blue scale, 12 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="50.58" height="34" fill="#fbfdff"><title>Radix Colors blue 1: #fbfdff</title></rect><rect x="53.58" y="0" width="50.58" height="34" fill="#f4faff"><title>Radix Colors blue 2: #f4faff</title></rect><rect x="107.17" y="0" width="50.58" height="34" fill="#e6f4fe"><title>Radix Colors blue 3: #e6f4fe</title></rect><rect x="160.75" y="0" width="50.58" height="34" fill="#d5efff"><title>Radix Colors blue 4: #d5efff</title></rect><rect x="214.33" y="0" width="50.58" height="34" fill="#c2e5ff"><title>Radix Colors blue 5: #c2e5ff</title></rect><rect x="267.92" y="0" width="50.58" height="34" fill="#acd8fc"><title>Radix Colors blue 6: #acd8fc</title></rect><rect x="321.50" y="0" width="50.58" height="34" fill="#8ec8f6"><title>Radix Colors blue 7: #8ec8f6</title></rect><rect x="375.08" y="0" width="50.58" height="34" fill="#5eb1ef"><title>Radix Colors blue 8: #5eb1ef</title></rect><rect x="428.67" y="0" width="50.58" height="34" fill="#0090ff"><title>Radix Colors blue 9: #0090ff</title></rect><rect x="482.25" y="0" width="50.58" height="34" fill="#0588f0"><title>Radix Colors blue 10: #0588f0</title></rect><rect x="535.83" y="0" width="50.58" height="34" fill="#0d74ce"><title>Radix Colors blue 11: #0d74ce</title></rect><rect x="589.42" y="0" width="50.58" height="34" fill="#113264"><title>Radix Colors blue 12: #113264</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Radix Colors blue: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="39.08" y="67.65" width="26.00" height="4.35" fill="#8fa7c4"><title>Radix Colors blue step 1→2: d = 0.0278</title></rect><rect x="92.67" y="63.07" width="26.00" height="8.93" fill="#8fa7c4"><title>Radix Colors blue step 2→3: d = 0.0571</title></rect><rect x="146.25" y="59.40" width="26.00" height="12.60" fill="#8fa7c4"><title>Radix Colors blue step 3→4: d = 0.0806</title></rect><rect x="199.83" y="60.21" width="26.00" height="11.79" fill="#8fa7c4"><title>Radix Colors blue step 4→5: d = 0.0754</title></rect><rect x="253.42" y="57.11" width="26.00" height="14.89" fill="#8fa7c4"><title>Radix Colors blue step 5→6: d = 0.0952</title></rect><rect x="307.00" y="59.57" width="26.00" height="12.43" fill="#8fa7c4"><title>Radix Colors blue step 6→7: d = 0.0795</title></rect><rect x="360.58" y="65.43" width="26.00" height="6.57" fill="#8fa7c4"><title>Radix Colors blue step 7→8: d = 0.0420</title></rect><rect x="414.17" y="63.78" width="26.00" height="8.22" fill="#8fa7c4"><title>Radix Colors blue step 8→9: d = 0.0526</title></rect><rect x="467.75" y="67.45" width="26.00" height="4.55" fill="#8fa7c4"><title>Radix Colors blue step 9→10: d = 0.0291</title></rect><rect x="521.33" y="60.07" width="26.00" height="11.93" fill="#8fa7c4"><title>Radix Colors blue step 10→11: d = 0.0763</title></rect><rect x="574.92" y="20.67" width="26.00" height="51.33" fill="#8fa7c4"><title>Radix Colors blue step 11→12: d = 0.3283</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">red</span><span class="scale-stats">step CV 100.0% · max/min 14.1× · hue drift 11.2°</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Radix Colors red scale, 12 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="50.58" height="34" fill="#fffcfc"><title>Radix Colors red 1: #fffcfc</title></rect><rect x="53.58" y="0" width="50.58" height="34" fill="#fff7f7"><title>Radix Colors red 2: #fff7f7</title></rect><rect x="107.17" y="0" width="50.58" height="34" fill="#feebec"><title>Radix Colors red 3: #feebec</title></rect><rect x="160.75" y="0" width="50.58" height="34" fill="#ffdbdc"><title>Radix Colors red 4: #ffdbdc</title></rect><rect x="214.33" y="0" width="50.58" height="34" fill="#ffcdce"><title>Radix Colors red 5: #ffcdce</title></rect><rect x="267.92" y="0" width="50.58" height="34" fill="#fdbdbe"><title>Radix Colors red 6: #fdbdbe</title></rect><rect x="321.50" y="0" width="50.58" height="34" fill="#f4a9aa"><title>Radix Colors red 7: #f4a9aa</title></rect><rect x="375.08" y="0" width="50.58" height="34" fill="#eb8e90"><title>Radix Colors red 8: #eb8e90</title></rect><rect x="428.67" y="0" width="50.58" height="34" fill="#e5484d"><title>Radix Colors red 9: #e5484d</title></rect><rect x="482.25" y="0" width="50.58" height="34" fill="#dc3e42"><title>Radix Colors red 10: #dc3e42</title></rect><rect x="535.83" y="0" width="50.58" height="34" fill="#ce2c31"><title>Radix Colors red 11: #ce2c31</title></rect><rect x="589.42" y="0" width="50.58" height="34" fill="#641723"><title>Radix Colors red 12: #641723</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Radix Colors red: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="39.08" y="67.18" width="26.00" height="4.82" fill="#8fa7c4"><title>Radix Colors red step 1→2: d = 0.0308</title></rect><rect x="92.67" y="61.27" width="26.00" height="10.73" fill="#8fa7c4"><title>Radix Colors red step 2→3: d = 0.0686</title></rect><rect x="146.25" y="58.18" width="26.00" height="13.82" fill="#8fa7c4"><title>Radix Colors red step 3→4: d = 0.0884</title></rect><rect x="199.83" y="61.37" width="26.00" height="10.63" fill="#8fa7c4"><title>Radix Colors red step 4→5: d = 0.0680</title></rect><rect x="253.42" y="60.73" width="26.00" height="11.27" fill="#8fa7c4"><title>Radix Colors red step 5→6: d = 0.0721</title></rect><rect x="307.00" y="59.73" width="26.00" height="12.27" fill="#8fa7c4"><title>Radix Colors red step 6→7: d = 0.0785</title></rect><rect x="360.58" y="56.35" width="26.00" height="15.65" fill="#8fa7c4"><title>Radix Colors red step 7→8: d = 0.1001</title></rect><rect x="414.17" y="34.19" width="26.00" height="37.81" fill="#8fa7c4"><title>Radix Colors red step 8→9: d = 0.2418</title></rect><rect x="467.75" y="66.97" width="26.00" height="5.03" fill="#8fa7c4"><title>Radix Colors red step 9→10: d = 0.0322</title></rect><rect x="521.33" y="64.35" width="26.00" height="7.65" fill="#8fa7c4"><title>Radix Colors red step 10→11: d = 0.0489</title></rect><rect x="574.92" y="4.00" width="26.00" height="68.00" fill="#8fa7c4"><title>Radix Colors red step 11→12: d = 0.4349</title></rect></svg>
+      </div>
+<div class="scale-block">
+        <div class="scale-label"><span class="scale-name">gray</span><span class="scale-stats">step CV 143.5% · max/min 73.9× · hue drift — (achromatic)</span></div>
+        <svg viewBox="0 0 640 34" width="100%" height="34" role="img" aria-label="Radix Colors gray scale, 12 steps" preserveAspectRatio="none"><rect x="0.00" y="0" width="50.58" height="34" fill="#fcfcfc"><title>Radix Colors gray 1: #fcfcfc</title></rect><rect x="53.58" y="0" width="50.58" height="34" fill="#f9f9f9"><title>Radix Colors gray 2: #f9f9f9</title></rect><rect x="107.17" y="0" width="50.58" height="34" fill="#f0f0f0"><title>Radix Colors gray 3: #f0f0f0</title></rect><rect x="160.75" y="0" width="50.58" height="34" fill="#e8e8e8"><title>Radix Colors gray 4: #e8e8e8</title></rect><rect x="214.33" y="0" width="50.58" height="34" fill="#e0e0e0"><title>Radix Colors gray 5: #e0e0e0</title></rect><rect x="267.92" y="0" width="50.58" height="34" fill="#d9d9d9"><title>Radix Colors gray 6: #d9d9d9</title></rect><rect x="321.50" y="0" width="50.58" height="34" fill="#cecece"><title>Radix Colors gray 7: #cecece</title></rect><rect x="375.08" y="0" width="50.58" height="34" fill="#bbbbbb"><title>Radix Colors gray 8: #bbbbbb</title></rect><rect x="428.67" y="0" width="50.58" height="34" fill="#8d8d8d"><title>Radix Colors gray 9: #8d8d8d</title></rect><rect x="482.25" y="0" width="50.58" height="34" fill="#838383"><title>Radix Colors gray 10: #838383</title></rect><rect x="535.83" y="0" width="50.58" height="34" fill="#646464"><title>Radix Colors gray 11: #646464</title></rect><rect x="589.42" y="0" width="50.58" height="34" fill="#202020"><title>Radix Colors gray 12: #202020</title></rect></svg>
+        <svg viewBox="0 0 640 72" width="100%" height="72" role="img" aria-label="Radix Colors gray: perceptual step sizes between adjacent tokens (GenSpace distance). Even bars = even scale." preserveAspectRatio="none"><line x1="0" y1="71.5" x2="640" y2="71.5" stroke="#2a2a31" stroke-width="1"/><rect x="39.08" y="70.00" width="26.00" height="2.00" fill="#8fa7c4"><title>Radix Colors gray step 1→2: d = 0.0055</title></rect><rect x="92.67" y="69.36" width="26.00" height="2.64" fill="#8fa7c4"><title>Radix Colors gray step 2→3: d = 0.0169</title></rect><rect x="146.25" y="69.56" width="26.00" height="2.44" fill="#8fa7c4"><title>Radix Colors gray step 3→4: d = 0.0156</title></rect><rect x="199.83" y="69.45" width="26.00" height="2.55" fill="#8fa7c4"><title>Radix Colors gray step 4→5: d = 0.0163</title></rect><rect x="253.42" y="69.65" width="26.00" height="2.35" fill="#8fa7c4"><title>Radix Colors gray step 5→6: d = 0.0150</title></rect><rect x="307.00" y="68.09" width="26.00" height="3.91" fill="#8fa7c4"><title>Radix Colors gray step 6→7: d = 0.0250</title></rect><rect x="360.58" y="64.49" width="26.00" height="7.51" fill="#8fa7c4"><title>Radix Colors gray step 7→8: d = 0.0480</title></rect><rect x="414.17" y="49.25" width="26.00" height="22.75" fill="#8fa7c4"><title>Radix Colors gray step 8→9: d = 0.1455</title></rect><rect x="467.75" y="66.04" width="26.00" height="5.96" fill="#8fa7c4"><title>Radix Colors gray step 9→10: d = 0.0381</title></rect><rect x="521.33" y="50.53" width="26.00" height="21.47" fill="#8fa7c4"><title>Radix Colors gray step 10→11: d = 0.1373</title></rect><rect x="574.92" y="8.60" width="26.00" height="63.40" fill="#8fa7c4"><title>Radix Colors gray step 11→12: d = 0.4055</title></rect></svg>
+      </div></div>
+      <p class="bars-note">Bars: perceptual distance between adjacent tokens (helmlab GenSpace). Even bars = even scale. All bars share one absolute vertical scale across every system.</p>
+      <ul class="findings"><li>Raw numbers are the audit's highest (mean step CV 101.6%, gray max/min 73.9×) — but Radix documents its 12 steps as use-case roles (1–2 backgrounds, 3–5 component states, 9 solid, 11–12 text), not an even ramp. The big 11→12 text jumps (red: 0.435, the largest single step in the audit) are intentional.</li>
+<li>Re-scored on interior steps 2–11 only, blue and green become respectable (step CV 30.8% / 37.3%); red stays uneven (64.6%) and gray remains at 97.6% even without the role endpoints.</li>
+<li>Within its own logic it is consistent: solid step 9 always lands mid-contrast and lightness never reverses. Judged as a perceptual ramp it ranks last; judged as a role system it is coherent — weigh which contract you need.</li></ul>
+    </article>
+</section>
+
+<section id="methodology" class="method">
+  <h2>Methodology</h2>
+  <p>Every hex token is mapped into <strong>helmlab GenSpace</strong> (<code>hl.genFromHex(hex)</code> → [L, a, b] with L in 0–1; <code>hl.genToLch</code> → [L, C, h°]), a perceptually uniform generation space. Four measurements per scale:</p>
+
+  <h4>1 · Step-distance consistency (step CV)</h4>
+  <div class="formula">d_i = GenSpace Euclidean distance(token_i, token_{i+1})
+step CV = std(d) / mean(d) × 100        (plus max/min ratio)</div>
+  <p>Lower CV = more even perceptual steps. This is what the bar charts on each card show.</p>
+
+  <h4>2 · Lightness uniformity (L-CV) and monotonicity</h4>
+  <div class="formula">dL_i = L_{i+1} − L_i
+L-CV = std(dL) / |mean(dL)| × 100      (any sign flip → monotonicity violation)</div>
+
+  <h4>3 · Hue drift</h4>
+  <div class="formula">drift = max_i |h_i − h_first|   with 360° wrap,
+skipping steps with C &lt; 0.03 as achromatic</div>
+
+  <h4>4 · Contrast</h4>
+  <div class="formula">WCAG contrastRatio(mid, #ffffff) and contrastRatio(mid, #000000)
+flag if both &lt; 4.5   (mid = 500, Radix step 9, Primer step 5)</div>
+
+  <h4>Provenance &amp; limitations</h4>
+  <ul>
+    <li>Token sources are the official npm packages, versions recorded in <code>data/tokens/*.json</code>. Tailwind v4 publishes <code>oklch()</code>, converted to sRGB hex via culori; Bootstrap's chromatic ramps are generated exactly per its own <code>tint-color</code>/<code>shade-color</code> (sass <code>mix()</code>) definitions.</li>
+    <li>This audit measures <strong>scale quality only</strong> — how evenly and predictably a ramp is spaced in a perceptual space. It says nothing about overall design quality, aesthetics, component design, or the fitness of these palettes for their intended workflows.</li>
+    <li><strong>Radix Colors is role-based by design</strong>: its 12 steps are documented use-case roles, not an even ramp, so uniformity metrics measure a contract it never signed. This caveat is repeated on its card.</li>
+    <li>Results depend on the choice of perceptual space; GenSpace correlates strongly with OKLab-class spaces, so orderings should be broadly stable, but exact numbers are space-specific.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <p>This audit was produced with the <strong>color-skills</strong> agent skills + the <strong>helmlab</strong> library.</p>
+    <span class="install">npx skills add Grkmyldz148/color-skills</span>
+    <div class="footer-links">
+      <a href="https://helmlab.space/benchmark">helmlab.space/benchmark</a>
+      <a href="https://github.com/Grkmyldz148/color-audit">Source, data &amp; build script on GitHub</a>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:24px">Rebuild with <code>node build.mjs</code> — the page is generated from <code>data/scorecard.json</code> and <code>data/tokens/*.json</code>. MIT © 2026 Görkem Yıldız.</p>
+  </div>
+</footer>
+</body>
+</html>
